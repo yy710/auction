@@ -1,0 +1,72 @@
+<!--index.wxml-->
+<view class="container">
+
+  <view class='swiper-container'>
+    <swiper class="swiper_box" autoplay="{{autoplay}}" interval="{{interval}}" duration="{{duration}}" bindchange="swiperchange">
+      <block wx:for="{{banners}}" wx:key="id">
+        <swiper-item>
+          <image bindtap="tapBanner" data-id="{{item.id}}" src="{{item.picUrl}}" class="slide-image" width="750rpx" height="562.5rpx" />
+        </swiper-item>
+      </block>
+    </swiper>
+  </view>
+
+  <view class='tools-container'>
+    <view class='tools-container-box'>
+      <view class='tools-item' bindtap='goSale'>
+        <view class='tools-item-image-container'>
+          <image src='../../images/home/buy.png' class='tools-item-image'></image>
+        </view>
+        <view class='tools-item-text-container'>
+          <text class='tools-item-text'>买车</text>
+        </view>
+      </view>
+      <view class='tools-item' bindtap='gofabu'>
+        <view class='tools-item-image-container'>
+          <image src='../../images/home/sale.png' class='tools-item-image'></image>
+        </view>
+        <view class='tools-item-text-container'>
+          <text class='tools-item-text'>发布</text>
+        </view>
+      </view>
+      <view class='tools-item' bindtap='openLocation'>
+        <view class='tools-item-image-container'>
+          <image src='../../images/home/ava_location.png' class='tools-item-image'></image>
+        </view>
+        <view class='tools-item-text-container'>
+          <text class='tools-item-text'>我的位置</text>
+        </view>
+      </view>
+      <view class='tools-item'  bindtap='salContact'>
+        <view class='tools-item-image-container'>
+          <image src='../../images/home/car_safe.png' class='tools-item-image'></image>
+        </view>
+        <view class='tools-item-text-container'>
+          <text class='tools-item-text'>服务咨询</text>
+        </view>
+      </view>
+    </view>
+  </view>
+  
+<button open-type="getUserInfo" bindgetuserinfo="user">getUserInfo</button>
+
+  <view class='line' style="height:10px;background-color:#f2f2f2"></view>
+  <view class='service-container'>
+    <view class='service-title'>购车保障</view>
+    <view class='serivce-box'>
+      <view class='serivce-item'>
+        <image src='../../images/home/shen.png' class='service-image'></image>
+        <view class='service-label'>精品车源，价格公道</view>
+      </view>
+      <view class='serivce-item'>
+        <image src='../../images/home/ce.png' class='service-image'></image>
+        <view class='service-label'>专业检测团队，还原真实车况</view>
+      </view>
+      <view class='serivce-item'>
+        <image src='../../images/home/bao.png' class='service-image'></image>
+        <view class='service-label'>专业团队，全程保驾护航</view>
+      </view>
+    </view>
+  </view>
+  <view class='line' style="height:10px;background-color:#f2f2f2"></view>
+</view>

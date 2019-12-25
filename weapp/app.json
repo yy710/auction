@@ -1,0 +1,60 @@
+{
+  "pages": [
+    "pages/auction/auction",
+    "pages/index/index",
+    "pages/logs/logs",
+    "pages/sale/sales",
+    "pages/detail/detail",
+    "pages/report/report",
+    "pages/fenqi/fenqi",
+    "pages/submit/submit"
+  ],
+  "window": {
+    "backgroundTextStyle": "light",
+    "navigationBarBackgroundColor": "#fff",
+    "navigationBarTitleText": "WeChat",
+    "navigationBarTextStyle": "black"
+  },
+  "tabBar": {
+    "backgroundColor": "#ffffff",
+    "color": "#c0c0c0",
+    "selectedColor": "#008040",
+    "list": [
+      {
+        "selectedIconPath": "images/tabbar/mn01.png",
+        "text": "首页",
+        "pagePath": "pages/index/index",
+        "iconPath": "images/tabbar/mn1.png"
+      },
+      {
+        "selectedIconPath": "images/tabbar/mn01.png",
+        "text": "发布",
+        "pagePath": "pages/submit/submit",
+        "iconPath": "images/home/sale.png"
+      },
+      {
+        "selectedIconPath": "images/tabbar/mn01.png",
+        "text": "检测报告",
+        "pagePath": "pages/report/report",
+        "iconPath": "images/home/ce.png"
+      },
+      {
+        "selectedIconPath": "images/tabbar/mn01.png",
+        "text": "分期",
+        "pagePath": "pages/fenqi/fenqi",
+        "iconPath": "images/home/car.png"
+      },
+      {
+        "selectedIconPath": "images/tabbar/mn02.png",
+        "text": "车辆详情",
+        "pagePath": "pages/detail/detail",
+        "iconPath": "images/tabbar/mn2.png"
+      }
+    ]
+  },
+  "sitemapLocation": "sitemap.json",
+  "usingComponents": {
+    "van-button": "vant-weapp/button",
+    "van-card": "vant-weapp/card"
+  }
+}
