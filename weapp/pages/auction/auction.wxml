@@ -1,2 +1,5 @@
-<!--pages/auction/auction.wxml-->
-<text>pages/auction/auction.wxml</text>
+<view>
+<text>{{ socketText }}</text>
+<text>{{ socketMsg }}</text>
+<button bindtap="add">add</button>
+</view>
