@@ -2,4 +2,18 @@
 <text>{{ socketText }}</text>
 <text>{{ socketMsg }}</text>
 <button bindtap="add">add</button>
+<van-count-down
+  class="control-count-down"
+  millisecond
+  time="{{ time }}"
+  auto-start="{{ false }}"
+  format="还剩余 mm 分 ss:SSS"
+  bind:finish="finished"
+/>
+<van-toast id="van-toast" />
+<van-grid clickable column-num="3">
+  <van-grid-item text="开始" icon="play-circle-o" bindclick="start" />
+  <van-grid-item text="暂停" icon="pause-circle-o" bindclick="pause" />
+  <van-grid-item text="重置" icon="replay" bindclick="reset" />
+</van-grid>
 </view>

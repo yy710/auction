@@ -1,3 +1,4 @@
+import Toast from '@vant/weapp/toast/toast';
 const app = getApp();
 let socketTask = null;
 
@@ -8,7 +9,27 @@ Page({
    */
   data: {
     socketText: '等待连接。。。',
-    socketMsg: ''
+    socketMsg: '',
+    time: 200000
+  },
+
+  start() {
+    const countDown = this.selectComponent('.control-count-down');
+    countDown.start();
+  },
+
+  pause() {
+    const countDown = this.selectComponent('.control-count-down');
+    countDown.pause();
+  },
+
+  reset() {
+    const countDown = this.selectComponent('.control-count-down');
+    countDown.reset();
+  },
+
+  finished() {
+    Toast('倒计时结束');
   },
 
   add() {
@@ -47,7 +68,9 @@ Page({
       data.price && this.setData({
         socketText: data.price,
       });
-      data.msg && this.setData({ socketMsg: data.msg})
+      data.msg && this.setData({
+        socketMsg: data.msg
+      })
     });
 
   },
