@@ -1,0 +1,6 @@
+<view>
+<text>请选择需要上传的图片</text>
+  <van-uploader file-list="{{ fileList }}" bind:after-read="afterRead" bind:delete="deletePhoto" >
+  <van-button icon="photo" type="primary">上传图片</van-button>
+  </van-uploader>
+</view>

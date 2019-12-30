@@ -8,6 +8,9 @@ const app = express();
 //const EventProxy = require('eventproxy');
 //const session = require('./session.js').session;
 //const MongoClient = require('mongodb').MongoClient;
+const routerUpload = require('./router-upload');
+app.use('/yz', routerUpload(express));
+
 const SocketServer = require('ws');
 const { httpsOptions } = require('./config');
 

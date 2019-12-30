@@ -1,5 +1,6 @@
 {
   "pages": [
+    "pages/upload/upload",
     "pages/auction/auction",
     "pages/index/index",
     "pages/logs/logs",
@@ -54,7 +55,10 @@
   },
   "sitemapLocation": "sitemap.json",
   "usingComponents": {
-    "van-button": "vant-weapp/button",
-    "van-card": "vant-weapp/card"
+    "van-button": "@vant/weapp/button/index",
+    "van-card": "@vant/weapp/card/index",
+    "van-grid": "@vant/weapp/grid/index",
+    "van-grid-item": "@vant/weapp/grid-item/index",
+    "van-toast": "@vant/weapp/toast/index"
   }
 }
