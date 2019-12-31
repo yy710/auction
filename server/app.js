@@ -9,7 +9,8 @@ const app = express();
 //const session = require('./session.js').session;
 //const MongoClient = require('mongodb').MongoClient;
 const routerUpload = require('./router-upload');
-app.use('/yz', routerUpload(express));
+app.use('/yz/auction/images', express.static('uploads'));
+app.use('/yz/auction', routerUpload(express));
 
 const SocketServer = require('ws');
 const { httpsOptions } = require('./config');
