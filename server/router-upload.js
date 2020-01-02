@@ -15,9 +15,17 @@ module.exports = function (express) {
     const router = express.Router();
 
     router.post('/upload-photos',
+        // async function
         upload.single('photos'),
+        async function (req, res, next) {
+            //console.log("Enter sync function...");
+            const r = await wait500(10);
+            //console.log("waiting...", r);
+            next();
+        },
         function (req, res, next) {
             console.log("req.file: ", req.file);
+            console.log("req.body: ", req.body);
             /** req.files:  [ 
                 { 
                   fieldname: 'photos',
@@ -43,4 +51,10 @@ function randomString(length = 8) {
     let result = '';
     for (var i = length; i > 0; --i) result += chars[Math.floor(Math.random() * chars.length)];
     return result;
+}
+
+function wait500(s = 500) {
+    return new Promise(function (resolve, reject) {
+        setTimeout(() => resolve(1), s);
+    });
 }

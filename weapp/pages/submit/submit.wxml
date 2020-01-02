@@ -92,9 +92,10 @@
 
     </view>
   </view>
+  <!-- 
   <view class='car-fenqi-container'>
     <view class='car-info-label'>金融方案</view>
-    <!-- 名称 -->
+    <!-- 名称 --
     <view class='line' style="height:1px;"></view>
     <view class='car-info-container'>
 
@@ -127,6 +128,7 @@
       </view>
     </view>
   </view>
+  -->
   <view class='car-photo-container'>
     <view class='car-info-label'>实车照片</view>
     <!-- 名称 -->

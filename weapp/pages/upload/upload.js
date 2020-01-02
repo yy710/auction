@@ -5,11 +5,7 @@ Page({
    */
   data: {
      //{url: 'http://iph.href.lu/60x60?text=default', name: '图片2', isImage: true}
-    fileList: [
-      { url: 'https://img.yzcdn.cn/vant/leaf.jpg', name: '图片1' },
-      { url: 'https://www.all2key.cn/yz/auction/images/OqPsm7Cs1577775621300.jpg'},
-      { url: 'https://www.all2key.cn/yz/auction/images/Gwk7o13u1577776248587.jpeg'}
-      ]
+    fileList: []
   },
 
   afterRead: function(event) {
