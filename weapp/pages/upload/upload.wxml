@@ -18,6 +18,9 @@
     <van-button :disabled="disableButton" type="primary" style="width: 100%" bind:click="sendNewReferred">确认保存信息</van-button>
   </van-cell>
   <view>
+  <ocr-navigator bind:onSuccess="driverSuccess" certificateType="drivingLicense">
+  <button type="primary">行驶证识别</button>
+</ocr-navigator>
   <navigator url="/pages/submit/submit" open-type="switchTab">到提交页面</navigator>
   <navigator url="../auction/auction">到竞价页面</navigator>
   </view>

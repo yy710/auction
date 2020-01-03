@@ -65,5 +65,11 @@
     "van-popup": "@vant/weapp/popup/index",
     "van-cell-group": "@vant/weapp/cell-group/index",
     "van-cell": "@vant/weapp/cell/index"
+  },
+  "plugins": {
+    "ocr-plugin": {
+      "version": "3.0.1",
+      "provider": "wx4418e3e031e551be"
+    }
   }
 }

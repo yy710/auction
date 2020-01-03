@@ -1,5 +1,6 @@
 {
   "usingComponents": {
-    "van-uploader": "@vant/weapp/uploader/index"
+    "van-uploader": "@vant/weapp/uploader/index",
+    "ocr-navigator": "plugin://ocr-plugin/ocr-navigator"
   }
 }

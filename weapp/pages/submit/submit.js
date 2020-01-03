@@ -1,5 +1,3 @@
-// pages/submit/submit.js
-
 Page({
 
   /**

@@ -8,6 +8,10 @@ Page({
     fileList: []
   },
 
+  driverSuccess: function(e){
+    console.log("driver info: ", e);
+  },
+
   afterRead: function(event) {
     const that = this;
     const { file } = event.detail;
@@ -43,7 +47,13 @@ Page({
    * Lifecycle function--Called when page load
    */
   onLoad: function(options) {
-
+    try{
+      const res = wx.getSystemInfoSync();
+      console.log("wx.getSystemInfoSync: ", res);
+      if (res.environment)console.log("qyweixin!");
+    }catch(e){
+      console.log("wx.getSystenInfoSync() error: ", e);
+    }
   },
 
   /**

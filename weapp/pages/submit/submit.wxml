@@ -86,16 +86,15 @@
       <view class='car-item-box' style='margin-top:10px;margin-bottom:10px'>
         <label class='car-label'>描　　述</label>
         <view style='flex:4'>
-          <textarea class="car-info-input" style='width:100%;margin-left:5px' bindblur="bindTextAreaBlur" auto-height placeholder="请输入车辆描述" id='descInput' bindinput="inputChange" />
+          <textarea class="car-info-input" style='width:90%;margin-left:10px;' bindblur="bindTextAreaBlur" auto-height placeholder="请输入车辆描述" id='descInput' bindinput="inputChange" />
         </view>
       </view>
-
     </view>
   </view>
-  <!-- 
+  
   <view class='car-fenqi-container'>
     <view class='car-info-label'>金融方案</view>
-    <!-- 名称 --
+    <!-- 名称 -->
     <view class='line' style="height:1px;"></view>
     <view class='car-info-container'>
 
@@ -128,7 +127,7 @@
       </view>
     </view>
   </view>
-  -->
+  
   <view class='car-photo-container'>
     <view class='car-info-label'>实车照片</view>
     <!-- 名称 -->
