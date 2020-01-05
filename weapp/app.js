@@ -5,7 +5,7 @@ App({
   },
   globalData: {
     userInfo: null,
-    host:'https://host.com/app',
+    host:'https://www.all2key.cn/yz/auction',
     socketTask: null
   }
 })

@@ -14,6 +14,21 @@ const formatNumber = n => {
   return n[1] ? n : '0' + n
 }
 
+function inQyweixin(){
+  try {
+    const res = wx.getSystemInfoSync();
+    //console.log("wx.getSystemInfoSync: ", res);
+    if (res.environment) {
+      //console.log("run in qyweixin!");
+      return true;
+    }
+    return false;
+  } catch (e) {
+    console.log("wx.getSystenInfoSync() error: ", e);
+  }
+}
+
 module.exports = {
-  formatTime: formatTime
+  formatTime,
+  inQyweixin
 }

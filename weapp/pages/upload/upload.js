@@ -1,10 +1,10 @@
-Page({
+const { inQyweixin } = require('../../utils/util.js');
+const app = getApp();
+const host = app.globalData.host;
 
-  /**
-   * Page initial data
-   */
+Page({
   data: {
-     //{url: 'http://iph.href.lu/60x60?text=default', name: '图片2', isImage: true}
+     //{ url: 'http://iph.href.lu/60x60?text=default', name: '图片2', isImage: true }
     fileList: []
   },
 
@@ -20,7 +20,7 @@ Page({
     //return 0;
     // 当设置 mutiple 为 true 时, file 为数组格式，否则为对象格式
     wx.uploadFile({
-      url: 'https://www.all2key.cn/yz/auction/upload-photos',
+      url: host + '/upload-photos',
       filePath: file.path,
       name: 'photos',
       formData: { user: 'test' },
@@ -28,7 +28,7 @@ Page({
         console.log(res.data);
         const data = JSON.parse(res.data);
         const { fileList } = that.data;//获取原文件列表
-        fileList.push({ url: data.url });
+        fileList.push({ url: data.url, filename: data.filename });
         // 上传完成需要更新 fileList
         that.setData({ fileList });
       }
@@ -36,24 +36,29 @@ Page({
   },
 
   deletePhoto(event){
+    const that = this;
     const index = event.detail.index;
     console.log(index);
-    const fileList = this.data.fileList;
-    fileList.splice(index,1);
-    this.setData({fileList});
+  
+    // delete photo from server
+    wx.request({
+      url: host + '/delete-photo',
+      data: { filename: that.data.fileList[index].filename },
+      success: function(res){
+        console.log(res.data);
+        // delete photo from client
+        const fileList = that.data.fileList;
+        fileList.splice(index, 1);
+        that.setData({ fileList });
+      }
+    });
   },
 
   /**
    * Lifecycle function--Called when page load
    */
   onLoad: function(options) {
-    try{
-      const res = wx.getSystemInfoSync();
-      console.log("wx.getSystemInfoSync: ", res);
-      if (res.environment)console.log("qyweixin!");
-    }catch(e){
-      console.log("wx.getSystenInfoSync() error: ", e);
-    }
+    console.log("inQyweixin: ", inQyweixin());
   },
 
   /**

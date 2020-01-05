@@ -1,4 +1,6 @@
 const multer = require('multer');
+const fs = require('fs');
+const assert = require('assert');
 var storage = multer.diskStorage({
     destination: function (req, file, cb) {
         cb(null, 'uploads/');
@@ -40,8 +42,18 @@ module.exports = function (express) {
             ]
             */
             const url = 'https://www.all2key.cn/yz/auction/images/' + req.file.filename;
-            res.json({ msg: 'upload files ok!', url });
+            res.json({ msg: 'upload files ok!', url, filename: req.file.filename });
         });
+
+    router.get('/delete-photo', function (req, res, next) {
+        assert.notEqual(null, req.query.filename);
+        const filename = req.query.filename;
+        fs.unlink('uploads/' + filename, (err) => {
+            if (err) throw err;
+            console.log(filename, ' was deleted');
+            res.json({ errcode: 0, msg: "file deleted!" });
+        });
+    });
 
     return router;
 };

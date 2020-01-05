@@ -1,9 +1,11 @@
 <view>
   <van-nav-bar title="录入二手车信息"></van-nav-bar>
+  <ocr-navigator bind:onSuccess="driverSuccess" certificateType="drivingLicense">
+    <button type="primary">扫描行驶证输入数据</button>
+  </ocr-navigator>
   <van-cell-group title="车辆信息：">
-    <van-field v-model="carName" maxlength="10" label="车辆名：" left-icon="contact" placeholder="请输入车辆名"></van-field>
-    <van-field v-model="carId" type="tel" label="车牌：" placeholder="请输入车牌或发动机号" left-icon="phone-o"></van-field>
-    <van-field readonly clickable label="车型" value="carType" placeholder="请选择车型" bind:click="showPicker = true"></van-field>
+    <van-field v-model="carName" maxlength="10" label="显示标题：" placeholder="请输入车辆展示标题"></van-field>
+    <van-field v-model="carId" type="tel" label="行驶里程：" placeholder="请输入车辆行驶里程"></van-field>
     <van-popup v-model="showPicker" position="bottom">
       <van-picker show-toolbar :columns="carTypes" bind:cancel="showPicker = false" bind:confirm="onConfirm"></van-picker>
     </van-popup>
@@ -13,15 +15,10 @@
       <van-button icon="photo" type="primary">上传照片</van-button>
     </van-uploader>
   </van-cell-group>
-  <van-cell>
-    <span>录入人员：{{ operator.name }}——{{ operator.mobile }}</span>
-    <van-button :disabled="disableButton" type="primary" style="width: 100%" bind:click="sendNewReferred">确认保存信息</van-button>
-  </van-cell>
+  <text>录入人员：{{ operator.name }}——{{ operator.mobile }}</text>
   <view>
-  <ocr-navigator bind:onSuccess="driverSuccess" certificateType="drivingLicense">
-  <button type="primary">行驶证识别</button>
-</ocr-navigator>
-  <navigator url="/pages/submit/submit" open-type="switchTab">到提交页面</navigator>
-  <navigator url="../auction/auction">到竞价页面</navigator>
+    <van-button type="primary" style="width: 100%" bind:click="sendNewReferred">保存以上信息</van-button>
+    <navigator url="/pages/submit/submit" open-type="switchTab">到提交页面</navigator>
+    <navigator url="../auction/auction">到竞价页面</navigator>
   </view>
 </view>
