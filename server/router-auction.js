@@ -41,8 +41,16 @@ module.exports = function (express) {
                 } 
             ]
             */
-            const url = 'https://www.all2key.cn/yz/auction/images/' + req.file.filename;
-            res.json({ msg: 'upload files ok!', url, filename: req.file.filename });
+
+            const image = req.file;
+            delete image.originalname;
+            const col = req.data.db.collection('images');
+            col.insertOne(image)
+                .then(() => {
+                    const url = 'https://www.all2key.cn/yz/auction/images/' + req.file.filename;
+                    res.json({ msg: 'upload files ok!', url, filename: req.file.filename });
+                })
+                .catch(err => console.log(err));
         });
 
     router.get('/delete-photo', function (req, res, next) {

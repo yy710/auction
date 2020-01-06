@@ -2,18 +2,24 @@
 const assert = require('assert');
 //const xml2js = require('xml2js');//use to wechat moudle
 const https = require('https');
+const SocketServer = require('ws');
 //const fs = require('fs');
 const express = require('express');
 const app = express();
+//const bodyParser = require('body-parser')
+//const http = require('http');
+//const xmlparser = require('express-xml-bodyparser');
+//const axios = require('axios');
+//const cors = require('cors');
+const MongoClient = require('mongodb').MongoClient;
+// 载入配置文件
+const { httpsOptions, dbUrl, debug } = require('./config.js');
+global.debug = debug;
 //const EventProxy = require('eventproxy');
 //const session = require('./session.js').session;
-//const MongoClient = require('mongodb').MongoClient;
-const routerUpload = require('./router-upload');
+const routerAuction = require('./router-auction');
 app.use('/yz/auction/images', express.static('uploads'));
-app.use('/yz/auction', routerUpload(express));
-
-const SocketServer = require('ws');
-const { httpsOptions } = require('./config');
+app.use('/yz/auction', initDb(dbUrl, MongoClient), routerAuction(express));
 
 //---------------------------------------------------------------------------------------
 
@@ -55,3 +61,29 @@ wss.on('connection', function (socket, req) {
         console.log("websocket connection closed");
     });
 });
+
+/**
+ * pure function to return middleware for init mongodb 
+ * @param {string} url connect string
+ * @param {object} mc MongoClient
+ * @returns middleware for express
+ */
+function initDb(url, mc) {
+    return function (req, res, next) {
+        req.data = {};
+        if (!global.db) {
+            // static method
+            mc.connect(url, { useUnifiedTopology: true }, function (err, client) {
+                assert.equal(null, err);
+                //if(err)throw err;
+                console.log("Connected successfully to mongodb server");
+                global.db = req.data.db = client.db("auction");
+                //client.close();
+                next();
+            });
+        } else {
+            req.data.db = global.db;
+            next();
+        }
+    };
+}
