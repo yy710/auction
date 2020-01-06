@@ -39,7 +39,7 @@
 .line {
   height: 1px;
   width: 100%;
-  background-color: #edeff3;
+  background-color: #e2e8f3;
 }
 
 .car-info-input {

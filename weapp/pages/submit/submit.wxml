@@ -3,7 +3,7 @@
   <view class='car-info-container'>
     <view class='car-info-label'>基本信息</view>
     <!-- 名称 -->
-    <view class='line' style="height:1px;"></view>
+    <view class='line' style="height:5px;"></view>
     <view class='car-info-container'>
       <view class='car-item-box' style='margin-top:10px;margin-bottom:10px'>
         <label class='car-label'>标　　题</label>

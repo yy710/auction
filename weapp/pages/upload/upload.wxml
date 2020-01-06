@@ -1,23 +1,48 @@
 <view>
-  <van-nav-bar title="录入二手车信息"></van-nav-bar>
-  <ocr-navigator bind:onSuccess="driverSuccess" certificateType="drivingLicense">
-    <button type="primary">扫描行驶证输入数据</button>
-  </ocr-navigator>
+  <view style="background-color: #777777;line-height: 3;text-align: center;">
+    <text style="color: #FFFFFF;font-size: 16px;flex: 1;">录入二手车信息</text>
+  </view>
+
   <van-cell-group title="车辆信息：">
-    <van-field v-model="carName" maxlength="10" label="显示标题：" placeholder="请输入车辆展示标题"></van-field>
-    <van-field v-model="carId" type="tel" label="行驶里程：" placeholder="请输入车辆行驶里程"></van-field>
-    <van-popup v-model="showPicker" position="bottom">
-      <van-picker show-toolbar :columns="carTypes" bind:cancel="showPicker = false" bind:confirm="onConfirm"></van-picker>
-    </van-popup>
+    <van-field value="{{car.mileage}}" maxlength="10" label="行驶里程：" type="number" placeholder="请输入车辆行驶里程（公里）"></van-field>
+    <van-field value="{{car.carTitle}}" maxlength="20" label="描述标题：" placeholder="请输入车辆描述标题"></van-field>
+    <van-field value="{{car.carDescrible}}" maxlength="150" autosize type="textarea" label="详细描述：" placeholder="请输入小于200字的车辆检测报告"></van-field>
   </van-cell-group>
-  <van-cell-group title="已上传照片：">
-    <van-uploader file-list="{{ fileList }}" bind:after-read="afterRead" bind:delete="deletePhoto">
-      <van-button icon="photo" type="primary">上传照片</van-button>
+
+  <ocr-navigator bind:onSuccess="driverSuccess" certificateType="drivingLicense">
+    <button type="primary">扫描行驶证</button>
+  </ocr-navigator>
+  <van-cell-group wx:if="{{car.plateNum}}" title="行驶证信息：">
+    <van-field value="{{car.plateNum}}" maxlength="10" label="车牌号码："></van-field>
+    <van-field value="{{car.vehicleType}}" maxlength="10" label="车辆类型："></van-field>
+    <van-field value="{{car.owner}}" maxlength="10" label="所有人："></van-field>
+    <van-field value="{{car.addr}}" type="textarea" autosize maxlength="50" label="住  址："></van-field>
+    <van-field value="{{car.useCharacter}}" maxlength="10" label="使用性质："></van-field>
+    <van-field value="{{car.model}}" maxlength="10" label="品牌型号："></van-field>
+    <van-field value="{{car.vin}}" maxlength="10" label="识别代号："></van-field>
+    <van-field value="{{car.engineNum}}" maxlength="10" label="发动机号："></van-field>
+    <van-field value="{{car.registerDate}}" maxlength="10" label="注册日期："></van-field>
+  </van-cell-group>
+
+  <van-cell-group title="{{fileLists[0].length==0?'请上传外观照片':'已上传外观照片：'}}">
+    <van-uploader id="0" file-list="{{fileLists[0]}}" bind:after-read="afterRead" bind:delete="deletePhoto">
     </van-uploader>
   </van-cell-group>
-  <text>录入人员：{{ operator.name }}——{{ operator.mobile }}</text>
+
+  <van-cell-group title="{{fileLists[1].length==0?'请上传驾驶舱照片':'已上传驾驶舱照片：'}}">
+    <van-uploader id="1" file-list="{{fileLists[1]}}" bind:after-read="afterRead" bind:delete="deletePhoto">
+    </van-uploader>
+  </van-cell-group>
+
+  <van-cell-group title="{{fileLists[2].length==0?'请上传发动机舱照片':'已上传发动机舱照片：'}}">
+    <van-uploader id="2" file-list="{{fileLists[2]}}" bind:after-read="afterRead" bind:delete="deletePhoto">
+    </van-uploader>
+  </van-cell-group>
+
+  <text style="color: #aaaaaa;font-size: 13px;margin: 10px;">录入人员：{{ operator.name }}——{{ operator.mobile }}</text>
+  <button type="primary" bind:click="saveCar">保存以上信息</button>
+
   <view>
-    <van-button type="primary" style="width: 100%" bind:click="sendNewReferred">保存以上信息</van-button>
     <navigator url="/pages/submit/submit" open-type="switchTab">到提交页面</navigator>
     <navigator url="../auction/auction">到竞价页面</navigator>
   </view>
