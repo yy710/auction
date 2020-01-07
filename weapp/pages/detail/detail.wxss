@@ -82,7 +82,7 @@ swiper-item image {
 .car_price_box {
   display: flex;
   flex-direction: row;
-  align-items: center;
+  align-items: baseline;
 }
 
 .new_car_price {

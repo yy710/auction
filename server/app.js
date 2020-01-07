@@ -35,11 +35,12 @@ let wss = new SocketServer.Server({ server });
 const broadcast = function (data) {
     wss.clients.forEach(function (client) {
         if (client.readyState === SocketServer.OPEN) {
-            client.send(JSON.stringify({ msg: data }));
+            client.send(JSON.stringify(data));
         }
     });
 };
 
+let price = 0;
 wss.on('connection', function (socket, req) {
     const ip = req.connection.remoteAddress;
     console.log("wss.clients.size: ", wss.clients.size);
@@ -48,14 +49,17 @@ wss.on('connection', function (socket, req) {
 
     socket.on('message', function (msg) {
         console.log(`Received message ${msg}`);
+        price += 5;
+        broadcast({ price, time: 20000, state: 'go' });
     });
 
-    let n = 0;
+    /* let n = 0;
     setInterval(() => {
         socket.send(JSON.stringify({ price: n++ }), { binary: false });
         if (n == 60) broadcast('broadcast!');
-    }, 1000);
-    //socket.send(JSON.stringify({ price: 5 }), {binary: false});
+    }, 1000); */
+
+    socket.send(JSON.stringify({ price, time: 20000, state: 'go' }), { binary: false });
 
     socket.on('close', function () {
         console.log("websocket connection closed");

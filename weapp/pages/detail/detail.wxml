@@ -1,18 +1,20 @@
-<!--pages/detail/detail.wxml-->
 <view class='detail-container'>
+<button wx:if="{{!hasUserInfo && canIUse}}" open-type="getUserInfo" bindgetuserinfo="getUserInfo"> 获取头像昵称 </button>
   <view class="swiper-container" wx:if="{{!detail.video.video_url}}">
-    <swiper class="swiper_box" autoplay="{{autoplay}}" interval="{{interval}}" duration="{{duration}}">
+    <swiper class="swiper_box" autoplay="{{autoplay}}" interval="{{interval}}" duration="{{duration}}" circular>
       <block wx:for="{{detail.imageURLs}}" wx:key="{{index}}">
         <swiper-item>
           <image src="{{item}}" class="slide-image" width="355" height="150" mode="aspectFit" lazy-load="true" />
         </swiper-item>
       </block>
     </swiper>
+    <!--
     <view class="dots">
       <block wx:for="{{detail.imageURLs}}" wx:key="unique">
         <view class="dot{{index == swiperCurrent ? ' active' : ''}}"></view>
       </block>
     </view>
+    -->
     <view wx:if="{{detail.isSaled}}" class='saled-container'>
       <image src='../../images/detail/saled.png' style='height:100%;width:100%'></image>
     </view>
@@ -30,6 +32,7 @@
       <view class='new_car_price'>新车含税{{detail.oldPrice}}万</view>
     </view>
   </view>
+  <!--
   <view class='precent_box' bindtap='goFenqi'>
     <view class='precent_info'>
       <text class='precent_text'>首付{{detail.firstPay}}万元 月供{{detail.mPay}}元</text>
@@ -38,6 +41,8 @@
       <text style="font-size:14px">详情></text>
     </view>
   </view>
+  -->
+  <y-auction></y-auction>
   <view class='car_info_box'>
     <view class='car_info_title'>
       <view class='title_label'></view>
@@ -55,10 +60,10 @@
         </view>
         <view class='car_info_item'>
           <view class='car_info_item_title'>
-            <text id="text11" style="color:#abafb3;font-size:14px">排量</text>
+            <text id="text11" style="color:#abafb3;font-size:14px">新车价</text>
           </view>
           <view class='car_info_item_content'>
-            <text style="color:#757f89;font-size:16px;font-weight: bold">{{detail.pailiang}}</text>
+            <text style="color:#757f89;font-size:16px;font-weight: bold">{{detail.oldPrice}}万</text>
           </view>
         </view>
       </view>
@@ -73,10 +78,10 @@
         </view>
         <view class='car_info_item'>
           <view class='car_info_item_title'>
-            <text id="text11" style="color:#abafb3;font-size:14px">变速箱</text>
+            <text id="text11" style="color:#abafb3;font-size:14px">档位/排量</text>
           </view>
           <view class='car_info_item_content'>
-            <text style="color:#757f89;font-size:16px;font-weight: bold">{{detail.dang}}</text>
+            <text style="color:#757f89;font-size:16px;font-weight: bold">{{detail.dang}}/{{detail.pailiang}}</text>
           </view>
         </view>
       </view>
