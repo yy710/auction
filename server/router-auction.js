@@ -3,7 +3,7 @@ const fs = require('fs');
 const assert = require('assert');
 var storage = multer.diskStorage({
     destination: function (req, file, cb) {
-        cb(null, 'uploads/');
+        cb(null, global.uploadPath);
     },
     filename: function (req, file, cb) {
         const suffix = file.originalname.split('.').pop();
@@ -44,6 +44,8 @@ module.exports = function (express) {
 
             const image = req.file;
             delete image.originalname;
+            image.creater = { id: 0, name: 'unknown', mobile: 0};
+            image.create_time = new Date();
             const col = req.data.db.collection('images');
             col.insertOne(image)
                 .then(() => {

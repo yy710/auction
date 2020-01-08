@@ -13,12 +13,13 @@ const app = express();
 //const cors = require('cors');
 const MongoClient = require('mongodb').MongoClient;
 // 载入配置文件
-const { httpsOptions, dbUrl, debug } = require('./config.js');
+const { httpsOptions, dbUrl, debug, uploadPath } = require('./config.js');
+global.uploadPath = uploadPath;
 global.debug = debug;
 //const EventProxy = require('eventproxy');
 //const session = require('./session.js').session;
 const routerAuction = require('./router-auction');
-app.use('/yz/auction/images', express.static('uploads'));
+app.use('/yz/auction/images', express.static(global.uploadPath));
 app.use('/yz/auction', initDb(dbUrl, MongoClient), routerAuction(express));
 
 //---------------------------------------------------------------------------------------
@@ -40,26 +41,50 @@ const broadcast = function (data) {
     });
 };
 
+class CountDown {
+    constructor(time = 0) {
+        this.start(time);
+    }
+
+    get() {
+        const time = this.endTime - new Date().getTime();
+        return time < 0 ? 0 : time;
+    }
+
+    start(time) {
+        this.endTime = new Date().getTime() + time;
+    }
+
+    reset(time = 60000) {
+        this.start(time);
+    }
+}
+
 let price = 0;
+const reserve = 6000;
+const countDown = new CountDown(20 * 60 * 1000);
 wss.on('connection', function (socket, req) {
     const ip = req.connection.remoteAddress;
     console.log("wss.clients.size: ", wss.clients.size);
     console.log("client ip: ", ip);
     //console.log("client headers: ", req.headers);
 
-    socket.on('message', function (msg) {
-        console.log(`Received message ${msg}`);
-        price += 5;
-        broadcast({ price, time: 20000, state: 'go' });
+    const time = countDown.get();
+    socket.send(JSON.stringify({ price, time, state: 'go' }), { binary: false });
+
+    socket.on('message', function (_msg) {
+        const msg = JSON.parse(_msg);
+        console.log("Received message: ", msg);
+        if (msg.price) {
+            price += msg.price;
+            if (price >= reserve) {
+                // start 20s 计时器
+                countDown.reset();
+            }
+            // reset price, time for all
+            broadcast({ price, time: countDown.get(), state: 'go' });
+        }
     });
-
-    /* let n = 0;
-    setInterval(() => {
-        socket.send(JSON.stringify({ price: n++ }), { binary: false });
-        if (n == 60) broadcast('broadcast!');
-    }, 1000); */
-
-    socket.send(JSON.stringify({ price, time: 20000, state: 'go' }), { binary: false });
 
     socket.on('close', function () {
         console.log("websocket connection closed");

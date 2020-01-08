@@ -7,5 +7,6 @@ module.exports = {
         cert: fs.readFileSync('../ssl/www.all2key.cn.pem')
     },
     dbUrl: "mongodb://yy710:yStock07@localhost:9527",
+    uploadPath: "../uploads/auction/",
     debug: true
 };

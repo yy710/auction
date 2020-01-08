@@ -33,7 +33,7 @@ App({
     });
   },
   globalData: {
-    userInfo: null,
+    userInfo: {},
     host: 'https://www.all2key.cn/yz/auction',
     socketTask: null
   }

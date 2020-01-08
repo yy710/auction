@@ -72,18 +72,18 @@ Page({
     }
     // ---------------------------------
 
-    var nickName = app.globalData.userInfo.nickName
+    var nickName = app.globalData.userInfo.nickName || '';
     if (nickName === 'A·J') {
       this.setData({
         carid: options.carid,
         isAdmin: true,
-      })
+      });
     } else {
       this.setData({
         carid: options.carid
-      })
+      });
     }
-    getDetail(this, options.carid)
+    getDetail(this, options.carid);
   },
 
   /**
