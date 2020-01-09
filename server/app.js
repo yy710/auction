@@ -6,6 +6,7 @@ const SocketServer = require('ws');
 //const fs = require('fs');
 const express = require('express');
 const app = express();
+const { CountDown } = require('./common.js');
 //const bodyParser = require('body-parser')
 //const http = require('http');
 //const xmlparser = require('express-xml-bodyparser');
@@ -41,37 +42,19 @@ const broadcast = function (data) {
     });
 };
 
-class CountDown {
-    constructor(time = 0) {
-        this.start(time);
-    }
-
-    get() {
-        const time = this.endTime - new Date().getTime();
-        return time < 0 ? 0 : time;
-    }
-
-    start(time) {
-        this.endTime = new Date().getTime() + time;
-    }
-
-    reset(time = 60000) {
-        this.start(time);
-    }
-}
-
 let price = 0;
 const reserve = 6000;
-const countDown = new CountDown(20 * 60 * 1000);
+const countDown = new CountDown(20 * 60);
 wss.on('connection', function (socket, req) {
     const ip = req.connection.remoteAddress;
     console.log("wss.clients.size: ", wss.clients.size);
     console.log("client ip: ", ip);
-    //console.log("client headers: ", req.headers);
+    console.log("client token: ", req.headers.token);
 
     const time = countDown.get();
-    socket.send(JSON.stringify({ price, time, state: 'go' }), { binary: false });
+    socket.send(JSON.stringify({ price, time, state: 'go' }), { binary: false });// time is left millseconds 
 
+    // --------------------------------------------------------
     socket.on('message', function (_msg) {
         const msg = JSON.parse(_msg);
         console.log("Received message: ", msg);

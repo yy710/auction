@@ -35,7 +35,8 @@ Component({
         url: 'wss://www.all2key.cn',
         header: {
           'content-type': 'appliction/json',
-          'client': 100
+          'client': 100,
+          'token': 'fhjtguykk6546'
         }
       });
 

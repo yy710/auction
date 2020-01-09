@@ -65,6 +65,11 @@ module.exports = function (express) {
         });
     });
 
+    router.get('/getdetail', function(req, res, next){
+        const carid = req.query.carid;
+        res.json({ code: 1, msg: 'successs!', car: {} });
+    })
+
     return router;
 };
 
