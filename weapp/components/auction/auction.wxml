@@ -1,6 +1,6 @@
 <view>
   <text>{{ socketText }}</text>
-  <text>{{ socketMsg }}</text>
+  <text>{{ '  carid: ' + carid }}</text>
   <button bindtap="add" disabled="{{disableAdd}}">add</button>
   <van-count-down class="control-count-down" millisecond time="{{ time }}" auto-start="{{ false }}" format="还剩余 mm 分 ss:SSS" bind:finish="finished" />
   <van-grid clickable column-num="3">

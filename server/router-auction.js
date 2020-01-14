@@ -46,7 +46,7 @@ module.exports = function (express) {
             delete image.originalname;
             image.creater = { id: 0, name: 'unknown', mobile: 0};
             image.create_time = new Date();
-            const col = req.data.db.collection('images');
+            const col = global.db.collection('images');
             col.insertOne(image)
                 .then(() => {
                     const url = 'https://www.all2key.cn/yz/auction/images/' + req.file.filename;

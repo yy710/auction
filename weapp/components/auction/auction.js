@@ -53,7 +53,9 @@ Component({
         this.setData({
           socketText: data.price,
           time: data.time,
-          state: data.state
+          state: data.state,
+          carid: data.carid,
+          endisableAdd: data.time > 0
         });
         this.reset();
         this.start();
