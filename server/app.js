@@ -6,7 +6,7 @@ const SocketServer = require('ws');
 //const fs = require('fs');
 const express = require('express');
 const app = express();
-const { tasks2Jobs, _startAuction, CountDown } = require('./common.js');
+const { tasks2Jobs, _startAuction, CountDown, Auction } = require('./common.js');
 //const bodyParser = require('body-parser')
 //const http = require('http');
 //const xmlparser = require('express-xml-bodyparser');
@@ -42,16 +42,13 @@ const routerAuction = require('./router-auction');
     });
 
     //---------------------------------------------------------------------------------------
-    //const EventEmitter = require('events');
-    //class MyEventEmitter extends EventEmitter { };
-    //const ev = new MyEventEmitter();
     const wss = new SocketServer.Server({ server });
     //const jobs = await tasks2Jobs(wss, global.db);
 
     // test case ----------------------------------------------------------------------------
     const EventEmitter = require('events');
     class MyEventEmitter extends EventEmitter { };
-    const ev = new MyEventEmitter();// for trigger next auction, every task has one ev
+    const ev = new MyEventEmitter();// for trigger next auction
     const countDown = new CountDown(ev);
 
     const auctions = [];
@@ -59,10 +56,13 @@ const routerAuction = require('./router-auction');
     auctions.push({ state: 0, price: 2000, reserve: 6000, carid: 1 });
     auctions.push({ state: 0, price: 3000, reserve: 7000, carid: 2 });
 
-    const startAuction = _startAuction(wss, countDown);
+    //const startAuction = _startAuction(wss, countDown);
     //const genExecAuction = execAuction(auctions);
     //let auction = genExecAuction.next();
-    startAuction(auctions.shift());
+    //startAuction(auctions.shift());
+
+    const auction = new Auction(wss, countDown);
+    auction.start(auctions.shift());
 
     ev.on('timeout', function () {
         //assert.equal(auction.id, auid);
@@ -70,15 +70,14 @@ const routerAuction = require('./router-auction');
         //const auc = genExecAuction.next(100);
         const auc = auctions.shift()
         if (!auc) {
-            console.log("auction end!");
-            
+            console.log("auction end! current price: ", price);
             // update db
 
             // cancel this job
 
         } else {
             console.log("auction continue: ", auc)
-            startAuction(auc);
+            auction.start(auc);
             // update db
 
         }

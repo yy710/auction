@@ -1,7 +1,7 @@
 const assert = require('assert');
 const schedule = require('node-schedule');
-const EventEmitter = require('events');
-class MyEventEmitter extends EventEmitter { };
+//const EventEmitter = require('events');
+//class MyEventEmitter extends EventEmitter { };
 
 async function tasks2Jobs(_wss, db) {
     const jobs = []
@@ -58,7 +58,7 @@ class CountDown {
         return this;
     }
 
-    reset(time = 60) {
+    reset(time = 20) {
         clearTimeout(this.timer);
         this.start(time);
         return this;
@@ -73,7 +73,7 @@ function _startAuction(wss, countDown) {
         let { state, price, reserve, carid } = auc;
         state = 1;
         broadcast({ price, time: countDown.get(), state, carid });
-        
+
         wss.on('connection', function (socket, req) {
             const ip = req.connection.remoteAddress;
             console.log("wss.clients.size: ", wss.clients.size);
@@ -90,7 +90,7 @@ function _startAuction(wss, countDown) {
                     price += msg.price;
                     if (price >= reserve) {
                         // start 20s 计时器
-                        countDown.reset();
+                        countDown.reset(20);
                     }
                     // reset price, time for all
                     broadcast({ price, time: countDown.get(), state, carid });
@@ -117,8 +117,8 @@ function _startAuction(wss, countDown) {
 
 // 单个竞价产品类
 class Auction {
-    constructor(data) {
-        // data: {
+    constructor(wss, countDown) {
+        // auc: {
         //   state  0: ready, 1: go, 2: end, 3: 流拍
         //   price  起拍价
         //   reserve  保留价
@@ -126,40 +126,41 @@ class Auction {
         //   winnerid 最终胜者id
         //   logs 竞价过程记录
         // }
-        this.data = data;
-        this.ee = ee;
-        this.countDown = null;// 计时器对象
+        this.auc = {};
+        this.wss = wss;
+        this.countDown = countDown;// 计时器对象
+        this.initWss();
     }
 
-    inReserve() {
-        return this.data.price < this.data.reserve;
+    start(auc) {
+        this.auc = mergeOptions(auc, this.auc);
+        this.auc.state = 1;
+        this.countDown.reset(20 * 60);
+        return this;
     }
 
-    start(wss, ee) {
-        this.data.state = 1;
-        this.countDown = new CountDown(20 * 60);
-        const that = this;
-        wss.on('connection', function (socket, req) {
+    initWss() {
+        //const that = this;
+        this.wss.on('connection', (socket, req) => {
             const ip = req.connection.remoteAddress;
             console.log("wss.clients.size: ", wss.clients.size);
             console.log("client ip: ", ip);
             console.log("client token: ", req.headers.token);
 
-            const time = that.countDown.get();
-            socket.send(JSON.stringify({ price: that.data.price, time, state: that.data.state }), { binary: false });// time is left millseconds 
+            socket.send(JSON.stringify({ price: this.auc.price, time: this.countDown.get(), state: this.auc.state }), { binary: false });// time is left millseconds 
 
             // --------------------------------------------------------
-            socket.on('message', function (_msg) {
+            socket.on('message', (_msg) => {
                 const msg = JSON.parse(_msg);
                 console.log("Received message: ", msg);
                 if (msg.price) {
-                    that.data.price += msg.price;
-                    if (!that.inReserve()) {
+                    this.auc.price += msg.price;
+                    if (!this.inReserve()) {
                         // start 20s 计时器
-                        that.countDown.reset();
+                        this.countDown.reset(20);
                     }
                     // reset price, time for all
-                    broadcast({ price: that.data.price, time: countDown.get(), state: that.data.state });
+                    broadcast({ price: this.auc.price, time: this.countDown.get(), state: this.auc.state });
                 }
             });
 
@@ -167,8 +168,11 @@ class Auction {
                 console.log("websocket connection closed");
             });
         });
-
         return this;
+    }
+
+    inReserve() {
+        return this.auc.price < this.auc.reserve;
     }
 }
 
@@ -206,4 +210,11 @@ class Task {
     }
 }
 
-module.exports = { tasks2Jobs, _startAuction, CountDown };
+function mergeOptions(options, defaults) {
+    for (var key in defaults) {
+        options[key] = options[key] || defaults[key];
+    }
+    return options;
+}
+
+module.exports = { tasks2Jobs, _startAuction, CountDown, Auction };

@@ -48,14 +48,14 @@ Component({
       });
 
       socketTask.onMessage(res => {
-        //console.log("recive: ", res);
+        console.log("recive: ", res);
         const data = JSON.parse(res.data);
         this.setData({
           socketText: data.price,
           time: data.time,
           state: data.state,
           carid: data.carid,
-          endisableAdd: data.time > 0
+          endisableAdd: data.time >= 0
         });
         this.reset();
         this.start();
