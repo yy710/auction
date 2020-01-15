@@ -136,6 +136,7 @@ class Auction {
         this.auc = mergeOptions(auc, this.auc);
         this.auc.state = 1;
         this.countDown.reset(20 * 60);
+        this.broadcast();
         return this;
     }
 
@@ -143,11 +144,11 @@ class Auction {
         //const that = this;
         this.wss.on('connection', (socket, req) => {
             const ip = req.connection.remoteAddress;
-            console.log("wss.clients.size: ", wss.clients.size);
+            console.log("wss.clients.size: ", this.wss.clients.size);
             console.log("client ip: ", ip);
             console.log("client token: ", req.headers.token);
 
-            socket.send(JSON.stringify({ price: this.auc.price, time: this.countDown.get(), state: this.auc.state }), { binary: false });// time is left millseconds 
+            socket.send(JSON.stringify({ price: this.auc.price, time: this.countDown.get(), state: this.auc.state, carid: this.auc.carid }), { binary: false });// time is left millseconds 
 
             // --------------------------------------------------------
             socket.on('message', (_msg) => {
@@ -160,12 +161,16 @@ class Auction {
                         this.countDown.reset(20);
                     }
                     // reset price, time for all
-                    broadcast({ price: this.auc.price, time: this.countDown.get(), state: this.auc.state });
+                    this.broadcast();
                 }
             });
 
             socket.on('close', function () {
                 console.log("websocket connection closed");
+            });
+
+            this.countDown.ev.on('timeout', ()=>{
+                this.countDown.ev.emit('next', this.auc);
             });
         });
         return this;
@@ -174,18 +179,28 @@ class Auction {
     inReserve() {
         return this.auc.price < this.auc.reserve;
     }
+
+    broadcast() {
+        this.wss.clients.forEach(client => {
+            const data = { price: this.auc.price, time: this.countDown.get(), state: this.auc.state, carid: this.auc.carid };
+            // SocketServer: { CONNECTING: 0, OPEN: 1, CLOSING: 2, CLOSED: 3 }
+            if (client.readyState === 1) {
+                client.send(JSON.stringify(data));
+            }
+        });
+    };
 }
 
 // 定义竞价场次类
 class Task {
-    constructor(data, ee = new MyEventEmitter()) {
+    constructor(data, ev = new MyEventEmitter()) {
         // data: {
         //   state = 0; // 状态
         //   startDate = date; // 竞价场次开始时间
         //   auctions = []; // 排队竞价的产品列表
         // }
         this.data = data;
-        this.ee = ee;
+        this.ev = ev;
         this.auction = null; // 当前正在竞价的产品，注意这是一个 Auction 对象
     }
 
@@ -197,9 +212,9 @@ class Task {
     }
 
     begin() {
-        if (this.data.auctions.length != 0) {
-            this.next();
-        }
+       
+
+        
         return this;
     }
 

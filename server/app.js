@@ -64,13 +64,13 @@ const routerAuction = require('./router-auction');
     const auction = new Auction(wss, countDown);
     auction.start(auctions.shift());
 
-    ev.on('timeout', function () {
+    ev.on('next', function (_auc) {
         //assert.equal(auction.id, auid);
-        console.log("trigger timeout of event!");
-        //const auc = genExecAuction.next(100);
         const auc = auctions.shift()
+        console.log("trigger timeout of event! ", _auc.price);
+        //const auc = genExecAuction.next(100);
         if (!auc) {
-            console.log("auction end! current price: ", price);
+            console.log("auctions end! current price");
             // update db
 
             // cancel this job

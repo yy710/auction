@@ -55,7 +55,7 @@ Component({
           time: data.time,
           state: data.state,
           carid: data.carid,
-          endisableAdd: data.time >= 0
+          disableAdd: data.time < 0
         });
         this.reset();
         this.start();
