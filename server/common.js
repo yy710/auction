@@ -43,14 +43,14 @@ class Auction {
         this.auc = {};
         this.wss = wss;
         this.countDown = countDown;// 计时器对象
-        //this.initWss();
+        this.initWss();
     }
 
     start(auc) {
         this.auc = mergeOptions(auc, this.auc);
         this.auc.state = 1;
         this.countDown.reset(20 * 60);
-        this.initWss();
+        //this.initWss();
         this.broadcast();
         return this;
     }

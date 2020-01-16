@@ -46,8 +46,8 @@ const routerAuction = require('./router-auction');
     class MyEventEmitter extends EventEmitter { };
     const ev = new MyEventEmitter();// for trigger next auction
     const wss = new SocketServer.Server({ server });
-    let task = null;
-    //let job = null;
+    //let task = null;
+    let job = null;
 
     // test case ----------------------------------------------------------------------------
     //const col = global.db.collection('tasks');
@@ -63,14 +63,15 @@ const routerAuction = require('./router-auction');
     auctions2.push({ state: 0, price: 6000, reserve: 9000, carid: 4 });
     auctions2.push({ state: 0, price: 7000, reserve: 10000, carid: 5 });
     const tasks = [];
-    tasks.push({ id: 0, state: 0, auctions: auctions1, start_time: new Date('2020-01-16 17:37') });
-    tasks.push({ id: 1, state: 0, auctions: auctions2, start_time: new Date('2020-01-16 16:39') });
+    tasks.push({ id: 0, state: 0, auctions: auctions1, start_time: new Date('2020-01-16 22:32') });
+    tasks.push({ id: 1, state: 0, auctions: auctions2, start_time: new Date('2020-01-16 22:35') });
 
     ev.on('next', () => {
+        if(job)job.cancel();
         const task = tasks.shift();
         if (task) {
             console.log("next task: ", task);// [debug]
-            new Task(wss, ev).createJob(task);
+            job = new Task(wss, ev).createJob(task);
         } else {
             console.log("all jobs is completed!");
         }
