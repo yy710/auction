@@ -73,3 +73,68 @@ function w2() {
 
 w1().then(r => console.log("async 0k! ", r)); 
 */
+
+/* --------------------------------------------------------------
+const startAuction = _startAuction(wss, countDown);
+const genExecAuction = execAuction(auctions);
+let auction = genExecAuction.next();
+startAuction(auctions.shift());
+
+function* execAuction(aucs) {
+    for (i = 0; i < aucs.length; i++) {
+        const inData = yield aucs.shift();
+        console.log("inData: ", inData);
+    }
+    return { code: 1 };
+}
+
+// closure 函数, currying
+function _startAuction(wss, countDown) {
+    return function (auc) {
+        wss.removeAllListeners('connection');
+        countDown.reset(20 * 60);
+        let { state, price, reserve, carid } = auc;
+        state = 1;
+        broadcast({ price, time: countDown.get(), state, carid });
+
+        wss.on('connection', function (socket, req) {
+            const ip = req.connection.remoteAddress;
+            console.log("wss.clients.size: ", wss.clients.size);
+            console.log("client ip: ", ip);
+            console.log("client token: ", req.headers.token);
+
+            socket.send(JSON.stringify({ price, time: countDown.get(), state, carid }), { binary: false });// time is left millseconds 
+
+            // --------------------------------------------------------
+            socket.on('message', function (_msg) {
+                const msg = JSON.parse(_msg);
+                console.log("Received message: ", msg);
+                if (msg.price) {
+                    price += msg.price;
+                    if (price >= reserve) {
+                        // start 20s 计时器
+                        countDown.reset(20);
+                    }
+                    // reset price, time for all
+                    broadcast({ price, time: countDown.get(), state, carid });
+                }
+            });
+
+            socket.on('close', function () {
+                console.log("websocket connection closed");
+            });
+        });
+
+        function broadcast(data) {
+            wss.clients.forEach(function (client) {
+                // SocketServer: { CONNECTING: 0, OPEN: 1, CLOSING: 2, CLOSED: 3 }
+                if (client.readyState === 1) {
+                    client.send(JSON.stringify(data));
+                }
+            });
+        };
+
+        return wss;
+    };
+}
+------------------------------------------------------------------------------- */

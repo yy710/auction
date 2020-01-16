@@ -6,7 +6,7 @@ const SocketServer = require('ws');
 //const fs = require('fs');
 const express = require('express');
 const app = express();
-const { tasks2Jobs, _startAuction, CountDown, Auction } = require('./common.js');
+const { Task, Auction, CountDown } = require('./common.js');
 //const bodyParser = require('body-parser')
 //const http = require('http');
 //const xmlparser = require('express-xml-bodyparser');
@@ -42,52 +42,52 @@ const routerAuction = require('./router-auction');
     });
 
     //---------------------------------------------------------------------------------------
-    const wss = new SocketServer.Server({ server });
-    //const jobs = await tasks2Jobs(wss, global.db);
-
-    // test case ----------------------------------------------------------------------------
     const EventEmitter = require('events');
     class MyEventEmitter extends EventEmitter { };
     const ev = new MyEventEmitter();// for trigger next auction
-    const countDown = new CountDown(ev);
+    const wss = new SocketServer.Server({ server });
+    let task = null;
+    //let job = null;
 
-    const auctions = [];
-    auctions.push({ state: 0, price: 1000, reserve: 5000, carid: 0 });
-    auctions.push({ state: 0, price: 2000, reserve: 6000, carid: 1 });
-    auctions.push({ state: 0, price: 3000, reserve: 7000, carid: 2 });
+    // test case ----------------------------------------------------------------------------
+    //const col = global.db.collection('tasks');
+    //get tasks array from db, but exclude 'temp' 0f tag
+    //const tasks = await col.find({}).toArray();
 
-    //const startAuction = _startAuction(wss, countDown);
-    //const genExecAuction = execAuction(auctions);
-    //let auction = genExecAuction.next();
-    //startAuction(auctions.shift());
+    const auctions1 = [];
+    auctions1.push({ state: 0, price: 1000, reserve: 5000, carid: 0 });
+    auctions1.push({ state: 0, price: 2000, reserve: 6000, carid: 1 });
+    auctions1.push({ state: 0, price: 3000, reserve: 7000, carid: 2 });
+    const auctions2 = [];
+    auctions2.push({ state: 0, price: 5000, reserve: 8000, carid: 3 });
+    auctions2.push({ state: 0, price: 6000, reserve: 9000, carid: 4 });
+    auctions2.push({ state: 0, price: 7000, reserve: 10000, carid: 5 });
+    const tasks = [];
+    tasks.push({ id: 0, state: 0, auctions: auctions1, start_time: new Date('2020-01-16 17:37') });
+    tasks.push({ id: 1, state: 0, auctions: auctions2, start_time: new Date('2020-01-16 16:39') });
 
-    const auction = new Auction(wss, countDown);
-    auction.start(auctions.shift());
-
-    ev.on('next', function (_auc) {
-        //assert.equal(auction.id, auid);
-        const auc = auctions.shift()
-        console.log("trigger timeout of event! ", _auc.price);
-        //const auc = genExecAuction.next(100);
-        if (!auc) {
-            console.log("auctions end! current price");
-            // update db
-
-            // cancel this job
-
+    ev.on('next', () => {
+        const task = tasks.shift();
+        if (task) {
+            console.log("next task: ", task);// [debug]
+            new Task(wss, ev).createJob(task);
         } else {
-            console.log("auction continue: ", auc)
-            auction.start(auc);
-            // update db
-
+            console.log("all jobs is completed!");
         }
     });
+    ev.emit('next');
 
-    function* execAuction(aucs) {
-        for (i = 0; i < aucs.length; i++) {
-            const inData = yield aucs.shift();
-            console.log("inData: ", inData);
-        }
-        return { code: 1 };
+    //============================================================
+    function testAuction() {
+        const countDown = new CountDown(ev);
+        const auction = new Auction(wss, countDown);
+        auction.start(auctions1[0]);
+        ev.on('next', res => console.log("next event: ", res));
     }
+
+    function testTask() {
+        const job = new Task(wss, ev).createJob(tasks[0]);
+    }
+
+
 })();

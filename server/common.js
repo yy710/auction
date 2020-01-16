@@ -1,43 +1,7 @@
 const assert = require('assert');
 const schedule = require('node-schedule');
-//const EventEmitter = require('events');
-//class MyEventEmitter extends EventEmitter { };
-
-async function tasks2Jobs(_wss, db) {
-    const jobs = []
-    const col = db.collection('tasks');
-    //get tasks array from db, but exclude 'temp' 0f tag
-    const tasks = await col.find({}).toArray();
-    tasks.forEach(task => {
-        const job = schedule.scheduleJob(task.start_time, function () {
-            // debug
-            console.log('job start! ', new Date().toLocaleString());
-
-            const auctions = task.auctions;
-            let auction = auctions.shift();
-            const ev = new MyEventEmitter();// for trigger next auction, every task has one ev
-            const startAuction = _startAuction(_wss, ev);
-            startAuction(auction);
-
-            ev.on('next', function (auid) {
-                assert.equal(auction.id, auid);
-                if (auctions.length == 0) {
-                    // update db
-
-                    // cancel this job
-
-                } else {
-                    auction = auctions.shift();
-                    // update db
-
-                    startAuction(auction);
-                }
-            });
-        });
-        jobs.push(job);
-    });
-    return jobs;
-}
+const EventEmitter = require('events');
+class MyEventEmitter extends EventEmitter { };
 
 class CountDown {
     constructor(ev, time = 0) {
@@ -65,56 +29,6 @@ class CountDown {
     }
 }
 
-// closure 函数, currying
-function _startAuction(wss, countDown) {
-    return function (auc) {
-        wss.removeAllListeners('connection');
-        countDown.reset(20 * 60);
-        let { state, price, reserve, carid } = auc;
-        state = 1;
-        broadcast({ price, time: countDown.get(), state, carid });
-
-        wss.on('connection', function (socket, req) {
-            const ip = req.connection.remoteAddress;
-            console.log("wss.clients.size: ", wss.clients.size);
-            console.log("client ip: ", ip);
-            console.log("client token: ", req.headers.token);
-
-            socket.send(JSON.stringify({ price, time: countDown.get(), state, carid }), { binary: false });// time is left millseconds 
-
-            // --------------------------------------------------------
-            socket.on('message', function (_msg) {
-                const msg = JSON.parse(_msg);
-                console.log("Received message: ", msg);
-                if (msg.price) {
-                    price += msg.price;
-                    if (price >= reserve) {
-                        // start 20s 计时器
-                        countDown.reset(20);
-                    }
-                    // reset price, time for all
-                    broadcast({ price, time: countDown.get(), state, carid });
-                }
-            });
-
-            socket.on('close', function () {
-                console.log("websocket connection closed");
-            });
-        });
-
-        function broadcast(data) {
-            wss.clients.forEach(function (client) {
-                // SocketServer: { CONNECTING: 0, OPEN: 1, CLOSING: 2, CLOSED: 3 }
-                if (client.readyState === 1) {
-                    client.send(JSON.stringify(data));
-                }
-            });
-        };
-
-        return wss;
-    };
-}
-
 // 单个竞价产品类
 class Auction {
     constructor(wss, countDown) {
@@ -129,31 +43,44 @@ class Auction {
         this.auc = {};
         this.wss = wss;
         this.countDown = countDown;// 计时器对象
-        this.initWss();
+        //this.initWss();
     }
 
     start(auc) {
         this.auc = mergeOptions(auc, this.auc);
         this.auc.state = 1;
         this.countDown.reset(20 * 60);
+        this.initWss();
         this.broadcast();
         return this;
+    }
+
+
+    sendMsg(socket, data = {}) {
+        const _data = this.auc;
+        _data.time = this.countDown.get();
+        socket.send(JSON.stringify(mergeOptions(data, _data)));
     }
 
     initWss() {
         //const that = this;
         this.wss.on('connection', (socket, req) => {
+            //socket.removeAllListeners('message');
+            //this.socket = socket;
             const ip = req.connection.remoteAddress;
             console.log("wss.clients.size: ", this.wss.clients.size);
             console.log("client ip: ", ip);
             console.log("client token: ", req.headers.token);
 
-            socket.send(JSON.stringify({ price: this.auc.price, time: this.countDown.get(), state: this.auc.state, carid: this.auc.carid }), { binary: false });// time is left millseconds 
+            //socket.send(JSON.stringify({ price: this.auc.price, time: this.countDown.get(), state: this.auc.state, carid: this.auc.carid }), { binary: false }); 
+            this.sendMsg(socket);
 
-            // --------------------------------------------------------
-            socket.on('message', (_msg) => {
+            // handle submit new price --------------------------------------------------------
+            socket.on('message', _msg => {
                 const msg = JSON.parse(_msg);
-                console.log("Received message: ", msg);
+                console.log("Received message: ", msg);// [debug]
+                // save to logs
+
                 if (msg.price) {
                     this.auc.price += msg.price;
                     if (!this.inReserve()) {
@@ -169,7 +96,10 @@ class Auction {
                 console.log("websocket connection closed");
             });
 
-            this.countDown.ev.on('timeout', ()=>{
+            this.countDown.ev.on('timeout', () => {
+                this.auc.state = 2; // set auction end flag
+                // save auc to db
+
                 this.countDown.ev.emit('next', this.auc);
             });
         });
@@ -182,10 +112,9 @@ class Auction {
 
     broadcast() {
         this.wss.clients.forEach(client => {
-            const data = { price: this.auc.price, time: this.countDown.get(), state: this.auc.state, carid: this.auc.carid };
             // SocketServer: { CONNECTING: 0, OPEN: 1, CLOSING: 2, CLOSED: 3 }
             if (client.readyState === 1) {
-                client.send(JSON.stringify(data));
+                this.sendMsg(client);
             }
         });
     };
@@ -193,15 +122,17 @@ class Auction {
 
 // 定义竞价场次类
 class Task {
-    constructor(data, ev = new MyEventEmitter()) {
+    constructor(wss, ev) {
         // data: {
+        //   id = 0;
         //   state = 0; // 状态
-        //   startDate = date; // 竞价场次开始时间
+        //   start_time = new date(); // 竞价场次开始时间
         //   auctions = []; // 排队竞价的产品列表
         // }
-        this.data = data;
-        this.ev = ev;
-        this.auction = null; // 当前正在竞价的产品，注意这是一个 Auction 对象
+        this.data = {};
+        this.wss = wss;
+        this.ev = ev;// 从外部传入的事件监听器
+        this.job = null;
     }
 
     addTask(auction) {
@@ -211,17 +142,37 @@ class Task {
         return this;
     }
 
-    begin() {
-       
+    createJob(data) {
+        this.data = data;
+        return schedule.scheduleJob(this.data.start_time, () => {
+            // debug
+            console.log('job start at ', new Date().toLocaleString());
 
-        
-        return this;
-    }
+            this.data.state = 1;
+            //this.wss.removeAllListeners('connection');
+            const auctions = this.data.auctions;
+            const ev = new MyEventEmitter(); // 内部事件监听
+            const countDown = new CountDown(ev);
+            const auction = new Auction(this.wss, countDown);
 
-    next() {
-        this.auction = new Auction(this.data.auctions.shift());
-        this.auction.start(ee);
-        return this;
+            ev.on('next', lastauc => {
+                const auc = auctions.shift()
+                console.log("last auction: ", lastauc);// [debug]
+                if (!auc) {
+                    console.log("auction completed!");
+                    // update db
+
+                    // next task
+                    this.ev.emit('next', {});
+                } else {
+                    console.log("next auction: ", auc);// [debug]
+                    auction.start(auc);
+                    // update db
+
+                }
+            });
+            ev.emit('next', {});
+        });
     }
 }
 
@@ -232,4 +183,4 @@ function mergeOptions(options, defaults) {
     return options;
 }
 
-module.exports = { tasks2Jobs, _startAuction, CountDown, Auction };
+module.exports = { Task, CountDown, Auction };
