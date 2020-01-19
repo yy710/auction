@@ -41,9 +41,10 @@
 
   <text style="color: #aaaaaa;font-size: 13px;margin: 10px;">录入人员：{{ operator.name }}——{{ operator.mobile }}</text>
   <button type="primary" bind:click="saveCar">保存以上信息</button>
-
+  <!--
   <view>
     <navigator url="/pages/submit/submit" open-type="switchTab">到提交页面</navigator>
     <navigator url="../auction/auction">到竞价页面</navigator>
   </view>
+  -->
 </view>

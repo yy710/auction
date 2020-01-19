@@ -1,1 +1,11 @@
-/* components/auction/auction.wxss */
+.item {
+  display: inline-block;
+  width: 35px;
+  margin: 5px;
+  padding: 10px;
+  color: #fff;
+  font-size: 26px;
+  text-align: center;
+  background-color: #1989fa;
+  border-radius: 2px;
+}

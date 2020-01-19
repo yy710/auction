@@ -14,10 +14,11 @@
         <view class="dot{{index == swiperCurrent ? ' active' : ''}}"></view>
       </block>
     </view>
-    -->
+    
     <view wx:if="{{detail.isSaled}}" class='saled-container'>
       <image src='../../images/detail/saled.png' style='height:100%;width:100%'></image>
     </view>
+    -->
   </view>
   <view class="swiper-container" wx:if="{{detail.video.video_url}}">
     <video src="{{detail.video.video_url}}" style='width:100%'></video>
@@ -30,6 +31,7 @@
         <i class='wan'>万</i>
       </view>
       <view class='new_car_price'>新车含税{{detail.oldPrice}}万</view>
+        <view wx:if="{{!reachReserve}}" style="color:grey">{{socketText}}</view>
     </view>
   </view>
   <!--
@@ -42,7 +44,7 @@
     </view>
   </view>
   -->
-  <y-auction></y-auction>
+  <y-auction bind:changePrice="changePrice"></y-auction>
   <view class='car_info_box'>
     <view class='car_info_title'>
       <view class='title_label'></view>

@@ -55,34 +55,50 @@ const routerAuction = require('./router-auction');
     //const tasks = await col.find({}).toArray();
 
     const auctions1 = [];
-    auctions1.push({ state: 0, price: 1000, reserve: 5000, carid: 0 });
-    auctions1.push({ state: 0, price: 2000, reserve: 6000, carid: 1 });
-    auctions1.push({ state: 0, price: 3000, reserve: 7000, carid: 2 });
+    auctions1.push({ state: 0, price: 10000, reserve: 50000, carid: 0 });
+    auctions1.push({ state: 0, price: 20000, reserve: 60000, carid: 1 });
+    auctions1.push({ state: 0, price: 30000, reserve: 70000, carid: 2 });
     const auctions2 = [];
-    auctions2.push({ state: 0, price: 5000, reserve: 8000, carid: 3 });
-    auctions2.push({ state: 0, price: 6000, reserve: 9000, carid: 4 });
-    auctions2.push({ state: 0, price: 7000, reserve: 10000, carid: 5 });
+    auctions1.push({ state: 0, price: 50000, reserve: 80000, carid: 3 });
+    auctions1.push({ state: 0, price: 60000, reserve: 90000, carid: 4 });
+    auctions1.push({ state: 0, price: 70000, reserve: 100000, carid: 5 });
+    auctions1.push({ state: 0, price: 50000, reserve: 80000, carid: 6 });
+    auctions1.push({ state: 0, price: 60000, reserve: 90000, carid: 7 });
+    auctions1.push({ state: 0, price: 70000, reserve: 100000, carid: 8 });
+    auctions1.push({ state: 0, price: 50000, reserve: 80000, carid: 9 });
+    auctions1.push({ state: 0, price: 60000, reserve: 90000, carid: 10 });
+    auctions1.push({ state: 0, price: 70000, reserve: 100000, carid: 11 });
+    auctions1.push({ state: 0, price: 50000, reserve: 80000, carid: 12 });
+    auctions1.push({ state: 0, price: 60000, reserve: 90000, carid: 13 });
+    auctions1.push({ state: 0, price: 70000, reserve: 100000, carid: 14 });
+    auctions1.push({ state: 0, price: 10000, reserve: 50000, carid: 15 });
+    auctions1.push({ state: 0, price: 20000, reserve: 60000, carid: 16 });
+    auctions1.push({ state: 0, price: 30000, reserve: 70000, carid: 17 });
+    auctions1.push({ state: 0, price: 50000, reserve: 80000, carid: 18 });
+    auctions1.push({ state: 0, price: 60000, reserve: 90000, carid: 19 });
+    auctions1.push({ state: 0, price: 70000, reserve: 100000, carid: 20 });
+    auctions1.push({ state: 0, price: 50000, reserve: 80000, carid: 21 });
     const tasks = [];
-    tasks.push({ id: 0, state: 0, auctions: auctions1, start_time: new Date('2020-01-16 22:32') });
-    tasks.push({ id: 1, state: 0, auctions: auctions2, start_time: new Date('2020-01-16 22:35') });
+    tasks.push({ id: 0, state: 0, auctions: auctions1, start_time: new Date('2020-01-19 13:00') });
+    tasks.push({ id: 1, state: 0, auctions: auctions2, start_time: new Date('2020-01-19 08:50') });
 
-    ev.on('next', () => {
-        if(job)job.cancel();
-        const task = tasks.shift();
-        if (task) {
-            console.log("next task: ", task);// [debug]
-            job = new Task(wss, ev).createJob(task);
-        } else {
-            console.log("all jobs is completed!");
-        }
-    });
-    ev.emit('next');
+    // ev.on('next', () => {
+    //     if(job)job.cancel();
+    //     const task = tasks.shift();
+    //     if (task) {
+    //         console.log("next task: ", task);// [debug]
+    //         job = new Task(wss, ev).createJob(task);
+    //     } else {
+    //         console.log("all jobs is completed!");
+    //     }
+    // });
+    // ev.emit('next');
 
     //============================================================
-    function testAuction() {
+    function testAuction(auc) {
         const countDown = new CountDown(ev);
         const auction = new Auction(wss, countDown);
-        auction.start(auctions1[0]);
+        auction.start(auc);
         ev.on('next', res => console.log("next event: ", res));
     }
 
@@ -90,5 +106,6 @@ const routerAuction = require('./router-auction');
         const job = new Task(wss, ev).createJob(tasks[0]);
     }
 
+    testTask();
 
 })();

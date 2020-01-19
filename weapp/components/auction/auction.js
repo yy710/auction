@@ -10,6 +10,7 @@ Component({
     socketText: '等待连接。。。',
     socketMsg: '',
     time: 200000,
+    timeDate: {},
     state: 'ready', // ready | go | stop
     disableAdd: false
   },
@@ -57,6 +58,7 @@ Component({
           carid: data.carid,
           disableAdd: data.time < 0
         });
+        this.triggerEvent("changePrice", { price: data.price, reachReserve: data.price >= data.reserve });
         this.reset();
         this.start();
       });
@@ -67,6 +69,12 @@ Component({
   },
 
   methods: {
+    onTimeChange(e){
+      this.setData({
+        timeData: e.detail
+      });
+    },
+
     start() {
       const countDown = this.selectComponent('.control-count-down');
       countDown.start();
@@ -84,7 +92,7 @@ Component({
 
     finished() {
       wx.showToast({
-        title: '倒计时结束',
+        title: '竞价结束',
         icon: 'success',
         duration: 2000
       });
@@ -93,15 +101,25 @@ Component({
       });
     },
 
-    add() {
-      socketTask.send({
-        data: JSON.stringify({
-          price: 1000
-        }),
-        success: function() {
-          console.log("socket send data ok!");
-        }
-      });
-    }
+    add200: _add(200),
+
+    add500: _add(500),
+
+    add1000: _add(1000)
   }
 });
+
+function _add(n) {
+  return function(e) {
+    console.log("add: ", n);
+    //if (this.data.disableAdd) return 0;
+    socketTask.send({
+      data: JSON.stringify({
+        price: n
+      }),
+      success: function() {
+        console.log("socket send data ok!");
+      }
+    });
+  };
+}

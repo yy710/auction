@@ -1,3 +1,6 @@
+const EventEmitter = require('events');
+class MyEventEmitter extends EventEmitter { };
+
 function *execAuction(aus){
     for(i=0;i<aus.length;i++){
         const a = yield i*10;
@@ -6,13 +9,21 @@ function *execAuction(aus){
     return 'end';
 }
 
-const aus = [1, 2,3];
+const aus = [1, 2, 3];
 const exe = execAuction(aus);
 console.log(exe);
 console.log(exe.next(100));
 console.log(exe.next(78));
 console.log(exe.next(88));
 console.log(exe.next());
+
+
+
+
+const ev = new MyEventEmitter();
+ev.on('event1', function(data){
+    console.log("event1: ", data);
+});
 
 /*
 function *ea2(aus){

@@ -23,15 +23,9 @@
     "list": [
       {
         "selectedIconPath": "images/tabbar/mn01.png",
-        "text": "首页",
+        "text": "发布",
         "pagePath": "pages/upload/upload",
         "iconPath": "images/tabbar/mn1.png"
-      },
-      {
-        "selectedIconPath": "images/tabbar/mn01.png",
-        "text": "发布",
-        "pagePath": "pages/submit/submit",
-        "iconPath": "images/home/sale.png"
       },
       {
         "selectedIconPath": "images/tabbar/mn01.png",
@@ -40,14 +34,8 @@
         "iconPath": "images/home/ce.png"
       },
       {
-        "selectedIconPath": "images/tabbar/mn01.png",
-        "text": "分期",
-        "pagePath": "pages/fenqi/fenqi",
-        "iconPath": "images/home/car.png"
-      },
-      {
         "selectedIconPath": "images/tabbar/mn02.png",
-        "text": "车辆详情",
+        "text": "车辆竞价",
         "pagePath": "pages/detail/detail",
         "iconPath": "images/tabbar/mn2.png"
       }

@@ -8,6 +8,8 @@ Page({
     autoplay: true,
     interval: 3000,
     duration: 1000,
+    socketText: '当前价格未到保留价',
+    reachReserve: false,
     detail: {
       video: {
         video_url: ''
@@ -31,6 +33,14 @@ Page({
     duration: 1000,
     carid: '',
     isAdmin: false,
+  },
+
+  changePrice(e){
+    console.log("newPrice: ", e.detail);
+    this.setData({
+      "detail.price": e.detail.price/10000,
+      "reachReserve": e.detail.reachReserve
+      });
   },
 
   getUserInfo: function(e) {
