@@ -105,7 +105,7 @@ Component({
 
     add500: _add(500),
 
-    add1000: _add(1000)
+    add1000: _add(10000)
   }
 });
 

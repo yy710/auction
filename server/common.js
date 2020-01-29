@@ -1,16 +1,27 @@
 const assert = require('assert');
 const schedule = require('node-schedule');
 const EventEmitter = require('events');
-class MyEventEmitter extends EventEmitter { };
+//class MyEventEmitter extends EventEmitter { };
 
-class CountDown {
-    constructor(ev, time = 0) {
+/**
+ * @class
+ * @extends EventEmitter
+ */
+class CountDown extends EventEmitter {
+    /**
+     * @constructor
+     * @param {number} time unit: seconds 
+     */
+    constructor(time = 0) {
+        super();
         this.endTime = 0;
-        this.ev = ev;
         this.timer = null;
         this.start(time);
     }
 
+    /**
+     * @return {number} left milleseconds
+     */
     get() {
         const time = this.endTime - new Date().getTime();
         return time < 0 ? 0 : time;
@@ -18,7 +29,7 @@ class CountDown {
 
     start(time) {
         this.endTime = new Date().getTime() + time * 1000;
-        this.timer = setTimeout(() => this.ev.emit('timeout', ''), time * 1000);
+        this.timer = setTimeout(() => this.emit('timeout', time), time * 1000);
         return this;
     }
 
@@ -40,8 +51,8 @@ class Auction {
         //   winnerid 最终胜者id
         //   logs 竞价过程记录
         // }
-        this.auc = {};
-        this.wss = wss;
+        this.auc = {}; // data will save to mongodb
+        this.wss = wss; // websocket object
         this.countDown = countDown;// 计时器对象
         this.initWss();
     }
@@ -96,11 +107,13 @@ class Auction {
                 console.log("websocket connection closed");
             });
 
-            this.countDown.ev.on('timeout', () => {
+            this.countDown.on('timeout', time => {
+                console.log('timeout: ', time);// [debug]
+                
                 this.auc.state = 2; // set auction end flag
                 // save auc to db
 
-                this.countDown.ev.emit('next', this.auc);
+                this.countDown.emit('next', this.auc);
             });
         });
         return this;
@@ -122,7 +135,7 @@ class Auction {
 
 // 定义竞价场次类
 class Task {
-    constructor(wss, ev) {
+    constructor(wss) {
         // data: {
         //   id = 0;
         //   state = 0; // 状态
@@ -131,7 +144,7 @@ class Task {
         // }
         this.data = {};
         this.wss = wss;
-        this.ev = ev;// 从外部传入的事件监听器
+        //this.ev = ev;// 从外部传入的事件监听器, use for next task
         this.job = null;
     }
 
@@ -151,11 +164,12 @@ class Task {
             this.data.state = 1;
             //this.wss.removeAllListeners('connection');
             const auctions = this.data.auctions;
-            const ev = new MyEventEmitter(); // 内部事件监听
-            const countDown = new CountDown(ev);
+            // 内部事件监听
+            //const ev = new MyEventEmitter();
+            const countDown = new CountDown();
             const auction = new Auction(this.wss, countDown);
 
-            ev.on('next', lastauc => {
+            countDown.on('next', lastauc => {
                 const auc = auctions.shift()
                 console.log("last auction: ", lastauc);// [debug]
                 if (!auc) {
@@ -163,7 +177,7 @@ class Task {
                     // update db
 
                     // next task
-                    this.ev.emit('next', {});
+                    //this.ev.emit('next', {});
                 } else {
                     console.log("next auction: ", auc);// [debug]
                     auction.start(auc);
@@ -171,7 +185,7 @@ class Task {
 
                 }
             });
-            ev.emit('next', {});
+            countDown.emit('next', {});
         });
     }
 }
