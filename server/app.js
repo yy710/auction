@@ -46,6 +46,15 @@ const routerAuction = require('./router-auction');
     //class MyEventEmitter extends EventEmitter { };
     //const ev = new MyEventEmitter();// for trigger next auction
     const wss = new SocketServer.Server({ server });
+    // add broadcast method
+    wss.broadcast = function(data = {}) {
+        this.clients.forEach(client => {
+            // SocketServer: { CONNECTING: 0, OPEN: 1, CLOSING: 2, CLOSED: 3 }
+            if (client.readyState === 1) {
+                client.send(JSON.stringify(data));
+            }
+        });
+    }
     //let task = null;
     //let job = null;
 

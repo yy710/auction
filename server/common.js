@@ -1,7 +1,6 @@
 const assert = require('assert');
 const schedule = require('node-schedule');
 const EventEmitter = require('events');
-//class MyEventEmitter extends EventEmitter { };
 
 /**
  * @class
@@ -66,7 +65,6 @@ class Auction {
         return this;
     }
 
-
     sendMsg(socket, data = {}) {
         const _data = this.auc;
         _data.time = this.countDown.get();
@@ -130,7 +128,7 @@ class Auction {
                 this.sendMsg(client);
             }
         });
-    };
+    }
 }
 
 // 定义竞价场次类
