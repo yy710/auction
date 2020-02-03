@@ -79,8 +79,8 @@ const routerAuction = require('./router-auction');
     // auctions1.push({ state: 0, price: 70000, reserve: 100000, carid: 20 });
     // auctions1.push({ state: 0, price: 50000, reserve: 80000, carid: 21 });
     const tasks = [];
-    tasks.push({ id: 0, state: 0, auctions: auctions1, start_time: new Date('2020-01-30 01:10') });
-    tasks.push({ id: 1, state: 0, auctions: auctions2, start_time: new Date('2020-01-30 01:13') });
+    tasks.push({ tags: ['yz', 'auto'], id: 0, state: 0, auctions: auctions1, start_time: new Date('2020-01-30 01:10') });
+    tasks.push({ tags: ['yz', 'other'], id: 1, state: 0, auctions: auctions2, start_time: new Date('2020-01-30 01:13') });
 
     // ev.on('next', () => {
     //     if(job)job.cancel();
