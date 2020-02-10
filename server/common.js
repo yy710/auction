@@ -51,7 +51,7 @@ class Auction {
         //   logs 竞价过程记录
         // }
         this.auc = {}; // data will save to mongodb
-        this.wss = wss; // websocket object
+        this.socket = null; // websocket object
         this.countDown = countDown;// 计时器对象
         this.initWss();
     }
@@ -65,15 +65,16 @@ class Auction {
         return this;
     }
 
-    sendMsg(socket, data = {}) {
+    sendMsg(data = {}) {
         const _data = this.auc;
         _data.time = this.countDown.get();
-        socket.send(JSON.stringify(mergeOptions(data, _data)));
+        this.socket.send(JSON.stringify(mergeOptions(data, _data)));
     }
 
-    initWss() {
+    initWss(wss) {
         //const that = this;
-        this.wss.on('connection', (socket, req) => {
+        wss.removeAllListeners();
+        wss.on('connection', (socket, req) => {
             //socket.removeAllListeners('message');
             //this.socket = socket;
             const ip = req.connection.remoteAddress;
@@ -82,10 +83,11 @@ class Auction {
             console.log("client token: ", req.headers.token);
 
             //socket.send(JSON.stringify({ price: this.auc.price, time: this.countDown.get(), state: this.auc.state, carid: this.auc.carid }), { binary: false }); 
-            this.sendMsg(socket);
+            this.socket = socket;
+            this.sendMsg();
 
             // handle submit new price --------------------------------------------------------
-            socket.on('message', _msg => {
+            this.socket.on('message', _msg => {
                 const msg = JSON.parse(_msg);
                 console.log("Received message: ", msg);// [debug]
                 // save to logs
@@ -101,13 +103,13 @@ class Auction {
                 }
             });
 
-            socket.on('close', function () {
+            this.socket.on('close', function () {
                 console.log("websocket connection closed");
             });
 
             this.countDown.on('timeout', time => {
                 console.log('timeout: ', time);// [debug]
-                
+
                 this.auc.state = 2; // set auction end flag
                 // save auc to db
 
@@ -131,61 +133,60 @@ class Auction {
     }
 }
 
-// 定义竞价场次类
-class Task {
-    constructor(wss) {
-        // data: {
-        //   id = 0;
-        //   state = 0; // 状态
-        //   start_time = new date(); // 竞价场次开始时间
-        //   auctions = []; // 排队竞价的产品列表
-        // }
-        this.data = {};
-        this.wss = wss;
-        //this.ev = ev;// 从外部传入的事件监听器, use for next task
-        this.job = null;
-    }
+// 定义竞价场次对象
+const Task = {
+    // data: {
+    //   tags = []; // multi products
+    //   id = 0;
+    //   state = 0; // 状态
+    //   start_time = new date(); // 竞价场次开始时间
+    //   auctions = []; // 排队竞价的产品列表
+    // }
+
+    exec(wss, data) {
+        // debug
+        console.log('job start at ', new Date().toLocaleString());
+        //this.wss.removeAllListeners('connection');
+        data.state = 1; // set flag: scheduled
+        const auctions = data.auctions;
+        countDown = new CountDown();
+        auction = new Auction(wss, countDown);
+
+        countDown.on('next', lastauc => {
+            const auc = auctions.shift()
+            console.log("last auction: ", lastauc);// [debug]
+            if (!auc) {
+                console.log("auction completed!");
+                // update db
+
+                // next task
+                //this.ev.emit('next', {});
+            } else {
+                console.log("next auction: ", auc);// [debug]
+                auction.start(auc);
+                // update db
+
+            }
+        });
+        countDown.emit('next', {});
+    },
+
+    getExec(wss, data, f = null) {
+        if (typeof f == 'function') this.exec = f;
+        return this.exec;
+    },
 
     addTask(auction) {
         this.data.auctions.push(auction);
         // write to db
 
         return this;
+    },
+
+    createJob(wss, data) {
+        return schedule.scheduleJob(data.start_time, this.getExec(wss, data));
     }
 
-    createJob(data) {
-        this.data = data;
-        return schedule.scheduleJob(this.data.start_time, () => {
-            // debug
-            console.log('job start at ', new Date().toLocaleString());
-
-            this.data.state = 1;
-            //this.wss.removeAllListeners('connection');
-            const auctions = this.data.auctions;
-            // 内部事件监听
-            //const ev = new MyEventEmitter();
-            const countDown = new CountDown();
-            const auction = new Auction(this.wss, countDown);
-
-            countDown.on('next', lastauc => {
-                const auc = auctions.shift()
-                console.log("last auction: ", lastauc);// [debug]
-                if (!auc) {
-                    console.log("auction completed!");
-                    // update db
-
-                    // next task
-                    //this.ev.emit('next', {});
-                } else {
-                    console.log("next auction: ", auc);// [debug]
-                    auction.start(auc);
-                    // update db
-
-                }
-            });
-            countDown.emit('next', {});
-        });
-    }
 }
 
 function mergeOptions(options, defaults) {

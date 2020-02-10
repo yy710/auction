@@ -1,4 +1,18 @@
+const auctions1 = [];
+auctions1.push({ state: 0, price: 10000, reserve: 50000, carid: 0 });
+auctions1.push({ state: 0, price: 20000, reserve: 60000, carid: 1 });
+auctions1.push({ state: 0, price: 30000, reserve: 70000, carid: 2 });
+const auctions2 = [];
+auctions2.push({ state: 0, price: 50000, reserve: 80000, carid: 3 });
+auctions2.push({ state: 0, price: 60000, reserve: 90000, carid: 4 });
+auctions2.push({ state: 0, price: 70000, reserve: 100000, carid: 5 });
+const tasks = [];
+tasks.push({ tags: ['yz', 'auto'], id: 0, state: 0, auctions: auctions1, start_time: new Date('2020-01-30 01:10') });
+tasks.push({ tags: ['yz', 'other'], id: 1, state: 0, auctions: auctions2, start_time: new Date('2020-01-30 01:13') });
+
 module.exports = {
+    tasks,
+    
     states: new Map([
         [1, '未加入竞价'],
         [2, '等待竞价开始'],
