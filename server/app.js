@@ -1,14 +1,14 @@
-
 const assert = require('assert');
 //const xml2js = require('xml2js');//use to wechat moudle
 const https = require('https');
-const SocketServer = require('ws');
+const WebSocket = require('ws');
 const url = require('url');
 //const fs = require('fs');
 const express = require('express');
 const app = express();
-const { Task, Auction, CountDown } = require('./common.js');
+const { Task } = require('./common.js');
 const { tasks } = require('./mock');
+const schedule = require('node-schedule');
 //const bodyParser = require('body-parser')
 //const http = require('http');
 //const xmlparser = require('express-xml-bodyparser');
@@ -34,92 +34,100 @@ const routerAuction = require('./router-auction');
 
     app.use('/yz/auction/images', express.static(global.uploadPath));
     app.use('/yz/auction', routerAuction(express));
+    app.use('/mymind', express.static('../my-mind'));
+    app.use('/mindmaps', express.static('../mindmaps/dist'));
+    app.use('/drawio', express.static('../drawio/src/main/webapp'));
 
-    //---------------------------------------------------------------------------------------
+    //------------------------------------------------------------------------
 
     const server = https.createServer(httpsOptions, app);
+    //const wss = new SocketServer.Server({ server });
     const wss1 = new WebSocket.Server({ noServer: true });
     const wss2 = new WebSocket.Server({ noServer: true });
+    const wsss = new Map([['yz', wss1], ['nz', wss2]]);
+    // [debug]
+    //console.log('wsss: ', wsss);
 
     server.on('upgrade', function upgrade(request, socket, head) {
         const pathname = url.parse(request.url).pathname;
-      
+
         if (pathname === '/') {
-          wss1.handleUpgrade(request, socket, head, function done(ws) {
-            wss1.emit('connection', ws, request);
-          });
-        } else if (pathname === '/bar') {
-          wss2.handleUpgrade(request, socket, head, function done(ws) {
-            wss2.emit('connection', ws, request);
-          });
+            wss1.handleUpgrade(request, socket, head, function done(ws) {
+                wss1.emit('connection', ws, request);
+            });
+        } else if (pathname === '/nz') {
+            wss2.handleUpgrade(request, socket, head, function done(ws) {
+                wss2.emit('connection', ws, request);
+            });
         } else {
-          socket.destroy();
+            socket.destroy();
         }
-      });
+    });
 
     const port = 443;
     server.listen(port, function () {
         console.log('https server is running on port ', port);
     });
 
-    //---------------------------------------------------------------------------------------
+    //---------------------------------------------------------------
     const EventEmitter = require('events');
-    class DataBus extends EventEmitter { };
-    const dataBus = new DataBus();// for trigger next auction
-    //const wss = new SocketServer.Server({ server });
-    /**
-     * add broadcast method to object wss
-     * @param {JSON} data will bo to send
-     */
-    wss1.broadcast = function (data = {}) {
-        this.clients.forEach(client => {
-            // SocketServer: { CONNECTING: 0, OPEN: 1, CLOSING: 2, CLOSED: 3 }
-            if (client.readyState === 1) {
-                client.send(JSON.stringify(data));
+    class DataBus extends EventEmitter {
+        constructor(wss, tasks) {
+            super();
+        }
+    };
+
+    const obj_tasks = {
+        tasks: [],
+        exec: async function load(date) {
+            // [debug]
+            console.log("mainJob started at ", date);
+
+            try {
+                // get tasks data from mongodb in one houre
+                const _tasks = await findTasks();
+                // [debug]
+                //console.log('_tasks: ', _tasks);
+                this.tasks = tasks2jobs(wsss, _tasks);
+                // [debug]
+                //console.log("taskObjects: ", this.tasks);
+            } catch (error) {
+                console.log(error);
             }
-        });
-    }
+        },
+        getTask: function (appToken = 0) {
+            return this.tasks.find(task => task.data.appToken == appToken && task.data.state == 2);
+        }
+    };
 
-    // test case ----------------------------------------------------------------------------
-    //const col = global.db.collection('tasks');
-    //get tasks array from db, but exclude 'temp' 0f tag
-    //const tasks = await col.find({}).toArray();
-
-    // ev.on('next', () => {
-    //     if(job)job.cancel();
-    //     const task = tasks.shift();
-    //     if (task) {
-    //         console.log("next task: ", task);// [debug]
-    //         job = new Task(wss, ev).createJob(task);
-    //     } else {
-    //         console.log("all jobs is completed!");
-    //     }
-    // });
-    // ev.emit('next');
-
-    //============================================================
-    // function testAuction(auc) {
-    //     const countDown = new CountDown(ev);
-    //     const auction = new Auction(wss, countDown);
-    //     auction.start(auc);
-    //     ev.on('next', res => console.log("next event: ", res));
-    // }
-
-
-    function nextJob(tasks) {
-        console.log('getNextJob(): ');
-        const task = tasks.shift();
-        return createJob(task, wss1);
-    }
-
-    function tasks2jobs() {
-        const jobs = new Map();
-        return tasks.map(task => {
-            return createJob(wss1, task);
-        });
-    }
-
-    const job = nextJob(tasks);
-    console.log("current job: ", job);
+    const mainJob = schedule.scheduleJob(new Date('2021-02-27 11:00'), cb(obj_tasks));
+    // [debug]
+    //console.log('mainJob: ', mainJob);
+    mainJob.job('manual exec');
 
 })();
+
+
+//-----------------------------------------------
+
+function cb(obj) {
+    return function (date) {
+        obj.exec(date);
+    };
+}
+
+function findTasks(col) {
+    return Promise.resolve(tasks);
+}
+
+/**
+ * 
+ * @param { EventEmitter } wss 
+ * @param { Array } tasks 
+ * @returns { Task } 
+ */
+function tasks2jobs(wsss, tasks) {
+    return tasks.map(task => {
+        return new Task(wsss, task);
+    });
+}

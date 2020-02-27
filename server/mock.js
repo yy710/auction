@@ -6,9 +6,13 @@ const auctions2 = [];
 auctions2.push({ state: 0, price: 50000, reserve: 80000, carid: 3 });
 auctions2.push({ state: 0, price: 60000, reserve: 90000, carid: 4 });
 auctions2.push({ state: 0, price: 70000, reserve: 100000, carid: 5 });
+const auctions3 = [];
+auctions3.push({ state: 0, price: 80000, reserve: 100000, carid: 6 });
+auctions3.push({ state: 0, price: 90000, reserve: 110000, carid: 7 });
 const tasks = [];
-tasks.push({ tags: ['yz', 'auto'], id: 0, state: 0, auctions: auctions1, start_time: new Date('2020-01-30 01:10') });
-tasks.push({ tags: ['yz', 'other'], id: 1, state: 0, auctions: auctions2, start_time: new Date('2020-01-30 01:13') });
+tasks.push({ app_token: 'yz', id: 1, state: 0, auctions: auctions1, start_time: new Date('2020-02-27 23:52') });
+tasks.push({ app_token: 'nz', id: 2, state: 0, auctions: auctions2, start_time: new Date('2020-02-27 23:52') });
+tasks.push({ app_token: 'yz', id: 3, state: 0, auctions: auctions3, start_time: new Date('2020-02-27 23:56') });
 
 module.exports = {
     tasks,
