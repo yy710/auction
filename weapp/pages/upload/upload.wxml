@@ -4,7 +4,7 @@
   </view>
 
   <van-cell-group title="车辆信息：">
-    <van-field value="{{car.mileage}}" maxlength="10" label="行驶里程：" type="number" placeholder="请输入车辆行驶里程（公里）"></van-field>
+    <van-field value="{{car.mileage}}" maxlength="10" label="行驶里程：" type="number" placeholder="请输入车辆行驶里程（公里）" bind:change="onChange" id="mileage" data-test="111"></van-field>
     <van-field value="{{car.carTitle}}" maxlength="20" label="描述标题：" placeholder="请输入车辆描述标题"></van-field>
     <van-field value="{{car.carDescrible}}" maxlength="150" autosize type="textarea" label="详细描述：" placeholder="请输入小于200字的车辆检测报告"></van-field>
   </van-cell-group>
@@ -40,7 +40,7 @@
   </van-cell-group>
 
   <text style="color: #aaaaaa;font-size: 13px;margin: 10px;">录入人员：{{ operator.name }}——{{ operator.mobile }}</text>
-  <button type="primary" bind:click="saveCar">保存以上信息</button>
+  <button type="primary" bindtap="saveCar">保存以上信息</button>
   <!--
   <view>
     <navigator url="/pages/submit/submit" open-type="switchTab">到提交页面</navigator>

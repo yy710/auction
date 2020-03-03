@@ -1,6 +1,6 @@
 <view>
   <!--
-  <text>{{ socketText }}</text>
+  <text>{{ price }}</text>
   <text>{{ '  carid: ' + carid }}</text>
   -->
   <van-count-down use-slot class="control-count-down" time="{{ time }}" auto-start="{{ false }}" bind:change="onTimeChange" bind:finish="finished">

@@ -1,14 +1,14 @@
 {
   "pages": [
     "pages/upload/upload",
-    "pages/auction/auction",
     "pages/index/index",
     "pages/logs/logs",
     "pages/sale/sales",
     "pages/detail/detail",
     "pages/report/report",
     "pages/fenqi/fenqi",
-    "pages/submit/submit"
+    "pages/submit/submit",
+    "pages/auctions/auctions"
   ],
   "window": {
     "backgroundTextStyle": "light",
@@ -23,21 +23,33 @@
     "list": [
       {
         "selectedIconPath": "images/tabbar/mn01.png",
-        "text": "发布",
+        "text": "新增车辆",
         "pagePath": "pages/upload/upload",
         "iconPath": "images/tabbar/mn1.png"
       },
       {
-        "selectedIconPath": "images/tabbar/mn01.png",
-        "text": "检测报告",
-        "pagePath": "pages/report/report",
-        "iconPath": "images/home/ce.png"
+        "selectedIconPath": "images/tabbar/mn5.png",
+        "text": "竞价设置",
+        "pagePath": "pages/auctions/auctions",
+        "iconPath": "images/tabbar/mn05.png"
       },
       {
         "selectedIconPath": "images/tabbar/mn02.png",
+        "text": "竞价列表",
+        "pagePath": "pages/sale/sales",
+        "iconPath": "images/tabbar/mn2.png"
+      },
+      {
+        "selectedIconPath": "images/tabbar/mn03.png",
+        "text": "检测报告",
+        "pagePath": "pages/report/report",
+        "iconPath": "images/tabbar/mn3.png"
+      },
+      {
+        "selectedIconPath": "images/tabbar/mn4.png",
         "text": "车辆竞价",
         "pagePath": "pages/detail/detail",
-        "iconPath": "images/tabbar/mn2.png"
+        "iconPath": "images/tabbar/mn04.png"
       }
     ]
   },

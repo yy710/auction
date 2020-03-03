@@ -1,4 +1,5 @@
 const assert = require('assert');
+const { inspect } = require('util');
 //const xml2js = require('xml2js');//use to wechat moudle
 const https = require('https');
 const WebSocket = require('ws');
@@ -102,7 +103,7 @@ const routerAuction = require('./router-auction');
 
     const mainJob = schedule.scheduleJob(new Date('2021-02-27 11:00'), cb(obj_tasks));
     // [debug]
-    //console.log('mainJob: ', mainJob);
+    //console.log('inspect mainJob: ', inspect(mainJob));
     mainJob.job('manual exec');
 
 })();

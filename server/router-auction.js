@@ -1,7 +1,9 @@
 const multer = require('multer');
 const fs = require('fs');
 const assert = require('assert');
-var storage = multer.diskStorage({
+const axios = require('axios');
+const { AppID, AppSecret } = require('./config.js');
+const storage = multer.diskStorage({
     destination: function (req, file, cb) {
         cb(null, global.uploadPath);
     },
@@ -11,7 +13,7 @@ var storage = multer.diskStorage({
     }
 });
 //const upload = multer({ dest: 'uploads/' });
-const upload = multer({ storage: storage });
+const upload = multer({ storage });
 
 module.exports = function (express) {
     const router = express.Router();
@@ -44,10 +46,10 @@ module.exports = function (express) {
 
             const image = req.file;
             delete image.originalname;
-            image.creater = { id: 0, name: 'unknown', mobile: 0};
+            image.creater = { id: 0, name: 'unknown', mobile: 0 };
             image.create_time = new Date();
             const col = global.db.collection('images');
-            col.insertOne(image)
+            col.insertOne({ ...image, ...req.body })
                 .then(() => {
                     const url = 'https://www.all2key.cn/yz/auction/images/' + req.file.filename;
                     res.json({ msg: 'upload files ok!', url, filename: req.file.filename });
@@ -58,17 +60,48 @@ module.exports = function (express) {
     router.get('/delete-photo', function (req, res, next) {
         assert.notEqual(null, req.query.filename);
         const filename = req.query.filename;
-        fs.unlink('uploads/' + filename, (err) => {
+        fs.unlink(global.uploadPath + filename, err => {
             if (err) throw err;
             console.log(filename, ' was deleted');
-            res.json({ errcode: 0, msg: "file deleted!" });
+            // remove frome db
+            const col = global.db.collection('images');
+            col.deleteOne({ filename })
+                .then(r => {
+                    assert.equal(1, r.deletedCount);
+                    console.log('document was clear');
+                    res.json({ errcode: 0, msg: "file deleted!" });
+                })
+                .catch(err => console.log(err));
         });
     });
 
-    router.get('/getdetail', function(req, res, next){
+    router.get('/getdetail', function (req, res, next) {
         const carid = req.query.carid;
         res.json({ code: 1, msg: 'successs!', car: {} });
-    })
+    });
+
+    router.get('/login', function (req, res, next) {
+        const code = req.query.code;
+        const url = `https://api.weixin.qq.com/sns/jscode2session?appid=${AppID}&secret=${AppSecret}&js_code=${code}&grant_type=authorization_code`;
+        axios.get(url).then(res => console.log("jscode2session: ", res.data)).catch(err => console.log(err));
+        // res: { session_key: 'zqzM4lY5QMtAWOGQaFBEig==', openid: 'o9Y585eAFqkm6WrDO6nEKmHIeqMc' }
+
+        res.json({ msg: 'successs!', code });
+    });
+
+    router.get('/save-car', async function (req, res, next) {
+        const query = JSON.parse(req.query.data);
+        console.log('query: ', query);
+
+        // get images
+        const images = await global.db.collection('images').find({ "car_plate_num": query.car.car_plate_num }).toArray();
+        const cars = { ...query, images };
+        console.log("cars: ", cars);
+         // save to db
+        await global.db.collection('cars').insertOne(cars);
+        
+        res.json({ msg: "ok" });
+    });
 
     return router;
 };

@@ -1,5 +1,6 @@
 //const app = getApp();
 let socketTask = null;
+let price = 0;
 
 Component({
   properties: {
@@ -7,7 +8,7 @@ Component({
   },
 
   data: {
-    socketText: '等待连接。。。',
+    price: '等待连接。。。',
     socketMsg: '',
     time: 200000,
     timeDate: {},
@@ -45,21 +46,25 @@ Component({
       socketTask.onOpen(res => {
         console.log(res);
         this.setData({
-          socketText: '连接成功！'
+          price: '连接成功！'
         });
       });
 
       socketTask.onMessage(res => {
         console.log("recive: ", res);
         const data = JSON.parse(res.data);
+        price = data.price;
         this.setData({
-          socketText: data.price,
+          price: data.price,
           time: data.time,
           state: data.state,
           carid: data.carid,
           disableAdd: data.time < 0
         });
-        this.triggerEvent("changePrice", { price: data.price, reachReserve: data.price >= data.reserve });
+        this.triggerEvent("changePrice", {
+          price: data.price,
+          reachReserve: data.price >= data.reserve
+        });
         this.reset();
         this.start();
       });
@@ -70,7 +75,7 @@ Component({
   },
 
   methods: {
-    onTimeChange(e){
+    onTimeChange(e) {
       this.setData({
         timeData: e.detail
       });
@@ -106,20 +111,23 @@ Component({
 
     add500: _add(500),
 
-    add1000: _add(10000)
+    add1000: _add(10000),
   }
 });
 
 function _add(n) {
-  return function(e) {
-    console.log("add: ", n);
+  return e => {
+    //console.log("e: ", e);
+    const data = JSON.stringify({
+      price,
+      add: n,
+      user: "yy710"
+    });
     //if (this.data.disableAdd) return 0;
     socketTask.send({
-      data: JSON.stringify({
-        price: n
-      }),
+      data,
       success: function() {
-        console.log("socket send data ok!");
+        console.log("socket send data: ", data);
       }
     });
   };

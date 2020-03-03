@@ -1,0 +1,2 @@
+<button open-type="getUserInfo">用户信息授权</button>
+<button open-type="openSetting" bindopensetting="callback">打开设置页</button>
