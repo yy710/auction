@@ -91,8 +91,16 @@ class Task {
     }
 }
 
-const task = new Task();
-console.log(task);
-task.next({ id: 1 });
-task.setDataBus(handle2).next({ id: 2 });
+// const task = new Task();
+// console.log(task);
+// task.next({ id: 1 });
+// task.setDataBus(handle2).next({ id: 2 });
 //console.log(Task.createJob());
+
+const ee = new DataBus();
+ee.on('msg', data => console.log("1: ", data));
+ee.on('msg', data => console.log("2: ", data));
+ee.prependListener('msg', function pre(data){console.log("3: ", data);});
+
+ee.emit('msg', { code: 1 });
+console.log("count:", ee.listenerCount('msg'), "names: ", ee.eventNames(), "listeners: ", ee.listeners('msg'));

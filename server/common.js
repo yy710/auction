@@ -119,7 +119,35 @@ class Task {
     this.initWss();
     this.initCountDown();
     this.data.state = 2; // task start, 2: doing
+    this.addListenerToAllSocket();
     this.nextAuction();
+  }
+
+  addListenerToAllSocket() {
+    this.wss.clients.forEach(socket => {
+      if (socket.readyState === 1 && socket.listenerCount('message') === 0) {
+        console.log('addListenerToAllSocket!');
+        //if (socket.listenerCount('message') > 0) socket.off('message');
+        socket.on('message', _msg => {
+          try {
+            // [debug]
+            console.log('Received message: ', _msg);
+            const msg = JSON.parse(_msg);
+            // save to logs
+            //this.logger.save('receiveMsg', msg);
+            if (msg.action === 'addPrice') {
+              this.addPrice(msg);
+            }
+          } catch (error) {
+            console.log(error);
+          }
+        });
+
+        socket.on('close', function() {
+          console.log('websocket connection closed');
+        });
+      }
+    });
   }
 
   handleConnection(socket, req) {
@@ -129,25 +157,26 @@ class Task {
     console.log('app token: ', req.headers.apptoken);
 
     this.sayHellow(socket);
+    this.addListenerToAllSocket();
 
-    socket.on('message', _msg => {
-      try {
-        // [debug]
-        console.log('Received message: ', _msg);
-        const msg = JSON.parse(_msg);
-        // save to logs
-        //this.logger.save('receiveMsg', msg);
-        if (msg.action === 'addPrice') {
-          this.addPrice(msg);
-        }
-      } catch (error) {
-        console.log(error);
-      }
-    });
+    // socket.on('message', _msg => {
+    //   try {
+    //     // [debug]
+    //     console.log('Received message: ', _msg);
+    //     const msg = JSON.parse(_msg);
+    //     // save to logs
+    //     //this.logger.save('receiveMsg', msg);
+    //     if (msg.action === 'addPrice') {
+    //       this.addPrice(msg);
+    //     }
+    //   } catch (error) {
+    //     console.log(error);
+    //   }
+    // });
 
-    socket.on('close', function() {
-      console.log('websocket connection closed');
-    });
+    // socket.on('close', function() {
+    //   console.log('websocket connection closed');
+    // });
   }
 
   sayHellow(socket) {
@@ -180,7 +209,7 @@ class Task {
       console.log('next auction carid: ', this.currentAuction.car.plateNum);
 
       this.currentAuction.state = 1; // 1: go
-      this.countDown.reset( 2 * 60);
+      this.countDown.reset(2 * 60);
     }
     this.broadcast();
     return this;
@@ -190,7 +219,7 @@ class Task {
     this.wss.clients.forEach(client => {
       // SocketServer: { CONNECTING: 0, OPEN: 1, CLOSING: 2, CLOSED: 3 }
       if (client.readyState === 1) {
-        client.close();
+        client.close(2020, "stage completed!");
       }
     });
   }
