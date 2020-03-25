@@ -1,5 +1,8 @@
 {
   "usingComponents": {
-    "y-auction": "/components/auction/auction"
+    "y-auction": "/components/auction/auction",
+    "y-cartype": "/components/cartype/cartype",
+    "y-carinfo": "/components/carinfo/carinfo",
+    "y-swiper": "/components/yswiper/yswiper"
   }
 }

@@ -28,26 +28,14 @@
         "iconPath": "images/tabbar/mn1.png"
       },
       {
-        "selectedIconPath": "images/tabbar/mn5.png",
-        "text": "竞价设置",
-        "pagePath": "pages/auctions/auctions",
-        "iconPath": "images/tabbar/mn05.png"
-      },
-      {
         "selectedIconPath": "images/tabbar/mn02.png",
         "text": "竞价列表",
         "pagePath": "pages/sale/sales",
         "iconPath": "images/tabbar/mn2.png"
       },
       {
-        "selectedIconPath": "images/tabbar/mn03.png",
-        "text": "检测报告",
-        "pagePath": "pages/report/report",
-        "iconPath": "images/tabbar/mn3.png"
-      },
-      {
         "selectedIconPath": "images/tabbar/mn4.png",
-        "text": "车辆竞价",
+        "text": "当前竞价",
         "pagePath": "pages/detail/detail",
         "iconPath": "images/tabbar/mn04.png"
       }
@@ -64,11 +52,13 @@
     "van-field": "@vant/weapp/field/index",
     "van-popup": "@vant/weapp/popup/index",
     "van-cell-group": "@vant/weapp/cell-group/index",
-    "van-cell": "@vant/weapp/cell/index"
+    "van-cell": "@vant/weapp/cell/index",
+    "van-radio-group": "@vant/weapp/radio-group/index",
+    "van-radio": "@vant/weapp/radio/index"
   },
   "plugins": {
     "ocr-plugin": {
-      "version": "3.0.1",
+      "version": "3.0.2",
       "provider": "wx4418e3e031e551be"
     }
   }

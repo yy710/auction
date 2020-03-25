@@ -28,7 +28,28 @@ function inQyweixin(){
   }
 }
 
+function _request(host, apptoken) {
+  /**
+   * @param {string} action
+   * @param {object} data
+   * @return {promise}
+   */
+  return function(action, data = {}, header = {}){
+    return new Promise(function (resolve, reject){
+      const sid = wx.getStorageSync('sid');
+      wx.request({
+        url: host + action,
+        header: { apptoken, ...header },
+        data: { sid, ...data },
+        success: resolve,
+        fail: reject
+      });
+    });
+  };
+}
+
 module.exports = {
   formatTime,
-  inQyweixin
+  inQyweixin,
+  request: _request('https://www.all2key.cn/yz/auction', 'yz_auction')
 }

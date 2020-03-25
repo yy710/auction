@@ -1,18 +1,30 @@
-//const app = getApp();
+const app = getApp();
+const sid = wx.getStorageSync('sid');
 let socketTask = null;
-let price = 0;
 
 Component({
   properties: {
-
+    carid: String,
+    time2: {
+      type: Number,
+      value: 0,
+      observer(newValue, oldValue){
+        const time3 = newValue - (new Date().getTime());
+        //console.log('time3: ', time3);
+        if(time3 > 0)this.setData({ time3, show: [0, 1] });
+      }
+    }
   },
 
   data: {
-    price: '等待连接。。。',
+    show: [0, 0],
+    price: 0,
     socketMsg: '',
     time: 200000,
+    tim3: 0,
     timeDate: {},
     state: 'ready', // ready | go | stop
+    _carid: null,
     disableAdd: false
   },
 
@@ -33,52 +45,84 @@ Component({
   lifetimes: {
     attached: function() {
       // 在组件实例进入页面节点树时执行
-      socketTask = wx.connectSocket({
-        url: 'wss://www.all2key.cn',
+      socketTask =  wx.connectSocket({
+        url: 'wss://www.all2key.cn/yz',
         header: {
           'content-type': 'appliction/json',
-          'client': 100,
-          'token': 'yy710',
-          'apptoken': 'yz'
+          'client': 'weapp',
+          'token': sid,
+          'apptoken': 'yz_auction'
         }
       });
 
       socketTask.onOpen(res => {
-        console.log(res);
-        this.setData({
-          price: '连接成功！'
-        });
+        console.log("socket open: ", res);
+        //this.sayHellow();
       });
 
       socketTask.onMessage(res => {
         console.log("recive: ", res);
+
+        if(!res.data)return 0;
         const data = JSON.parse(res.data);
-        price = data.price;
+        const price = parseInt(data.price);
+
+        if (!data.carid) {
+          // no auctioning
+          socketTask.close();
+          console.log("no auctioning! websocket closed!");
+          return 0;
+        } else if (!this.properties.carid){
+          // click auction button
+          this.triggerEvent("changeCar", { carid: data.carid });
+        } else if (this.properties.carid !== data.carid){
+          // user is browsing car
+          if (!this.data._carid){
+            wx.showModal({
+              title: '当前正在竞价',
+              content: '是否切换到竞价页面？',
+              success: res => {
+                if (res.confirm) {
+                  this.triggerEvent("changeCar", { carid: data.carid });
+                } else if (res.cancel) {
+                  console.log('用户点击取消');
+                }
+              }
+            });
+          }else{
+            // next car auction
+            this.triggerEvent("changeCar", { carid: data.carid });
+          }
+          return 1;
+        } 
+
         this.setData({
-          price: data.price,
-          time: data.time,
+          show: [1, 0],
+          price,
+          time: parseInt(data.time),
           state: data.state,
-          carid: data.carid,
+          _carid: data.carid,
           disableAdd: data.time < 0
         });
-        this.triggerEvent("changePrice", {
-          price: data.price,
-          reachReserve: data.price >= data.reserve
-        });
+        this.triggerEvent("changePrice", { price, reachReserve: data.price >= data.reserve });
         this.reset();
         this.start();
       });
+
+      socketTask.onClose(e => {
+        console.log("socket close: ", e);
+      });
     },
+
     detached: function() {
       // 在组件实例被从页面节点树移除时执行
+      socketTask.close();
     }
   },
 
   methods: {
     onTimeChange(e) {
-      this.setData({
-        timeData: e.detail
-      });
+      this.setData({ timeData: e.detail });
     },
 
     start() {
@@ -96,39 +140,53 @@ Component({
       countDown.reset();
     },
 
-    finished() {
-      wx.showToast({
-        title: '竞价结束',
-        icon: 'success',
-        duration: 2000
-      });
-      this.setData({
-        disableAdd: true
+    finished() { 
+      wx.showToast({ title: '竞价结束', icon: 'success', duration: 2000 });
+      this.setData({ disableAdd: true, show: [0, 0] });
+    },
+
+    addPrice(e){
+      //console.log("addPrice: ", e);
+      wx.showModal({
+        title: '提示',
+        content: '出价后20秒内无人加价即可成交，确认出价？',
+        success: res => {
+          if (res.confirm) {
+            const data = JSON.stringify({
+              action: 'addPrice',
+              carid: this.data.carid,
+              price: this.data.price,
+              addNum: e.target.dataset.num,
+              user: sid
+            });
+            //if (this.data.disableAdd) return 0;
+            socketTask.send({
+              data,
+              success: function () {
+                console.log("socket send data: ", data);
+              }
+            });
+          } else if (res.cancel) {
+            console.log('用户点击取消');
+          }
+        }
       });
     },
 
-    add200: _add(200),
-
-    add500: _add(500),
-
-    add1000: _add(10000),
+    sayHellow() {
+      //console.log("addPrice: ", e);
+      const data = JSON.stringify({
+        action: 'sayHellow',
+        carid: this.properties.carid,
+        user: sid
+      });
+      //if (this.data.disableAdd) return 0;
+      socketTask.send({
+        data,
+        success: function () {
+          console.log("socket send data: ", data);
+        }
+      });
+    }
   }
 });
-
-function _add(n) {
-  return e => {
-    //console.log("e: ", e);
-    const data = JSON.stringify({
-      price,
-      add: n,
-      user: "yy710"
-    });
-    //if (this.data.disableAdd) return 0;
-    socketTask.send({
-      data,
-      success: function() {
-        console.log("socket send data: ", data);
-      }
-    });
-  };
-}

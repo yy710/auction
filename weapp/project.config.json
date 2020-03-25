@@ -9,7 +9,7 @@
 		"coverView": true,
 		"autoAudits": false,
 		"checkInvalidKey": true,
-		"checkSiteMap": true,
+		"checkSiteMap": false,
 		"uploadWithSourceMap": true,
 		"babelSetting": {
 			"ignore": [],
@@ -19,7 +19,7 @@
 		"nodeModules": true
 	},
 	"compileType": "miniprogram",
-	"libVersion": "2.10.0",
+	"libVersion": "2.10.3",
 	"appid": "wxe3c4a0dd99cbb6b5",
 	"projectname": "%E8%B0%8A%E4%BC%97%E4%BA%8C%E6%89%8B%E8%BD%A6%E7%AB%9E%E4%BB%B7%E5%B9%B3%E5%8F%B0",
 	"isGameTourist": false,

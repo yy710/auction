@@ -1,4 +1,4 @@
-const { inQyweixin } = require('../../utils/util.js');
+const { inQyweixin, request } = require('../../utils/util.js');
 const app = getApp();
 const host = app.globalData.host;
 
@@ -6,21 +6,24 @@ Page({
   data: {
     //{ url: 'http://iph.href.lu/60x60?text=default', name: '图片2', isImage: true }
     fileLists: [ [], [], [] ],
-    car: {},
-    operator: { name: "张飞", mobile: "13705553110" }
+    car: { plateNum: '云A00001', vin: "LVSHBFAF29F066713" },
+    carType: {},
+    b: [0, 0, 0, 0]
   },
 
   onChange(e){
     console.log("onChange: ", e);
-    this.setData({ [`car.${e.target.id}`]: e.detail });
+    e.target.id == "mileage" ? this.setData({ [`car.${e.target.id}`]: e.detail, "b[3]": 1 }) : this.setData({ [`car.${e.target.id}`]: e.detail });  
   },
 
+  // upload photos
   afterRead: function(e) {
-    const car_plat_num = this.data.car.plate_num || 'test';
-    if(!car_plat_num){
-      wx.showToast({ title: '请扫描行驶证！', duration: 2000 });
-      return 0;
-    }
+    // const car_plat_num = this.data.car.plat_num;
+    // this.setData({ "car.plat_num": car_plat_num });
+    // if(!car_plat_num){
+    //   wx.showToast({ title: '请扫描行驶证！', duration: 2000 });
+    //   return 0;
+    // }
     //console.log("afterRead event: ", e);
     const that = this;
     const { file } = e.detail;
@@ -33,7 +36,7 @@ Page({
       url: host + '/upload-photos',
       filePath: file.path,
       name: 'photos',
-      formData: { user: 'test', tagId: index, car_plat_num },
+      formData: { sid: app.globalData.sid, tagId: index, car_plat_num: that.data.car.plateNum },
       success(res) {
         console.log(res.data);
         const data = JSON.parse(res.data);
@@ -42,7 +45,7 @@ Page({
         if (fileLists.length < index + 1) fileLists.push([]);
         fileLists[index].push({ url: data.url, filename: data.filename });
         // 上传完成需要更新 fileList
-        that.setData({ fileLists });
+        that.setData({ fileLists, "b[2]": 1 });
         //that.setData({ [`fileLists[${index}]`]: fileList });
       }
     });
@@ -87,14 +90,41 @@ Page({
     });
   },
 
-  saveCar() {
-    const data ={ data: { car: this.data.car, operator: this.data.operator } };
+  saveCar(e) {
+    const userinfo = e.detail;
+    console.log("bindgetuserinfo: ", userinfo);
+
+    // check user auther
+    if (userinfo.errMsg != "getUserInfo:ok"){
+      wx.showToast({
+        title: '请同意授权用户信息！',
+        duration: 2000
+      });
+      return 0;
+    }
+
+    const data ={ data: { car: this.data.car, carType: this.data.carType, userinfo } };
     console.log("saveCar(): ", data.data);
-    wx.request({
-      url: app.globalData.host + '/save-car',
-      data,
-      success: res => console.log("save-car: ", res.data)
-    });
+    request('/save-car', data).then(res => {
+      console.log("save-car: ", res.data);
+      wx.redirectTo({ url: '../auctions/auctions?carid=' + this.data.car.plateNum });
+    }).catch(err => console.log(err));
+  },
+
+  getCarType(){
+    //console.log("getCarType button: ", e.detail);
+    const vin = this.data.car.vin;
+    //get vin from server
+    request('/vin', { vin }).then(r => {
+      console.log("/vin: ", r.data);
+      const carType = r.data.carType;
+      this.setData({ carType, "b[0]": 1 });
+    }).catch(err => console.log(err));
+  },
+
+  onConfirm(e){
+    //console.log('onConfirm: ', e);
+    this.setData({ carType: e.detail, "car.carTitle": e.detail.name, "b[1]": 1 });
   },
 
   /**
@@ -102,54 +132,6 @@ Page({
    */
   onLoad: function(options) {
     console.log("inQyweixin: ", inQyweixin());
-  },
-
-  /**
-   * Lifecycle function--Called when page is initially rendered
-   */
-  onReady: function() {
-
-  },
-
-  /**
-   * Lifecycle function--Called when page show
-   */
-  onShow: function() {
-
-  },
-
-  /**
-   * Lifecycle function--Called when page hide
-   */
-  onHide: function() {
-
-  },
-
-  /**
-   * Lifecycle function--Called when page unload
-   */
-  onUnload: function() {
-
-  },
-
-  /**
-   * Page event handler function--Called when user drop down
-   */
-  onPullDownRefresh: function() {
-
-  },
-
-  /**
-   * Called when page reach bottom
-   */
-  onReachBottom: function() {
-
-  },
-
-  /**
-   * Called when user click on the top right corner to share
-   */
-  onShareAppMessage: function() {
-
+    //getCarType("LVSHBFAF29F066713");
   }
 });

@@ -3,25 +3,41 @@
   <text>{{ price }}</text>
   <text>{{ '  carid: ' + carid }}</text>
   -->
-  <van-count-down use-slot class="control-count-down" time="{{ time }}" auto-start="{{ false }}" bind:change="onTimeChange" bind:finish="finished">
-    <view>
+  <van-count-down wx:if="{{ show[0] }}" use-slot class="control-count-down" time="{{ time }}" auto-start="{{ false }}" bind:finish="finished" bind:change="onTimeChange">
+    <view style="padding-left:10px">
       <text>距离竞价结束还剩余</text>
+      <text class="item">{{ timeData.hours }}</text>
+      <text>时</text>
       <text class="item">{{ timeData.minutes }}</text>
       <text>分</text>
       <text class="item">{{ timeData.seconds }}</text>
       <text>秒</text>
     </view>
   </van-count-down>
-  <van-grid clickable column-num="3">
-    <van-grid-item bindclick="add200">
+
+  <van-count-down wx:if="{{ show[1] }}" use-slot time="{{ time3 }}" auto-start="{{ true }}" bind:change="onTimeChange">
+    <view style="padding-left:10px">
+      <text>距离竞价开始还剩余</text>
+      <text class="item2">{{ timeData.days }}</text>
+      <text>天</text>
+      <text class="item2">{{ timeData.hours }}</text>
+      <text>时</text>
+      <text class="item2">{{ timeData.minutes }}</text>
+      <text>分</text>
+      <text class="item2">{{ timeData.seconds }}</text>
+      <text>秒</text>
+    </view>
+  </van-count-down>
+  <van-grid clickable column-num="3" wx:if="{{ 1 }}">
+    <van-grid-item bindclick="addPrice" data-num="200">
       <view slot="text">加价
         <text style="font-size:20px;color:red">¥200</text>元</view>
     </van-grid-item>
-    <van-grid-item bindclick="add500">
+    <van-grid-item bindclick="addPrice" data-num="500">
       <view slot="text">加价
         <text style="font-size:20px;color:red">¥500</text>元</view>
     </van-grid-item>
-    <van-grid-item bindclick="add1000">
+    <van-grid-item bindclick="addPrice" data-num="1000">
       <view slot="text">加价
         <text style="font-size:20px;color:red">¥1000</text>元</view>
     </van-grid-item>

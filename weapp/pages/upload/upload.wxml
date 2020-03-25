@@ -3,44 +3,50 @@
     <text style="color: #FFFFFF;font-size: 16px;flex: 1;">录入二手车信息</text>
   </view>
 
-  <van-cell-group title="车辆信息：">
-    <van-field value="{{car.mileage}}" maxlength="10" label="行驶里程：" type="number" placeholder="请输入车辆行驶里程（公里）" bind:change="onChange" id="mileage" data-test="111"></van-field>
-    <van-field value="{{car.carTitle}}" maxlength="20" label="描述标题：" placeholder="请输入车辆描述标题"></van-field>
-    <van-field value="{{car.carDescrible}}" maxlength="150" autosize type="textarea" label="详细描述：" placeholder="请输入小于200字的车辆检测报告"></van-field>
-  </van-cell-group>
-
   <ocr-navigator bind:onSuccess="driverSuccess" certificateType="drivingLicense">
     <button type="primary">扫描行驶证</button>
   </ocr-navigator>
-  <van-cell-group wx:if="{{car.plateNum}}" title="行驶证信息：">
-    <van-field value="{{car.plateNum}}" maxlength="10" label="车牌号码："></van-field>
-    <van-field value="{{car.vehicleType}}" maxlength="10" label="车辆类型："></van-field>
-    <van-field value="{{car.owner}}" maxlength="10" label="所有人："></van-field>
-    <van-field value="{{car.addr}}" type="textarea" autosize maxlength="50" label="住  址："></van-field>
-    <van-field value="{{car.useCharacter}}" maxlength="10" label="使用性质："></van-field>
-    <van-field value="{{car.model}}" maxlength="10" label="品牌型号："></van-field>
-    <van-field value="{{car.vin}}" maxlength="10" label="识别代号："></van-field>
-    <van-field value="{{car.engineNum}}" maxlength="10" label="发动机号："></van-field>
-    <van-field value="{{car.registerDate}}" maxlength="10" label="注册日期："></van-field>
+  <van-cell-group title="行驶证信息：">
+    <van-field value="{{car.plateNum}}" maxlength="10" label="车牌号码：" bind:change="onChange" id="plateNum"></van-field>
+    <van-field value="{{car.vehicleType}}" maxlength="10" label="车辆类型：" bind:change="onChange" id="vehicleType"></van-field>
+    <van-field value="{{car.owner}}" maxlength="10" label="所有人：" bind:change="onChange" id="owner"></van-field>
+    <van-field value="{{car.addr}}" type="textarea" autosize maxlength="50" label="住  址：" bind:change="onChange" id="addr"></van-field>
+    <van-field value="{{car.useCharacter}}" maxlength="10" label="使用性质：" bind:change="onChange" id="useCharacter"></van-field>
+    <van-field value="{{car.model}}" maxlength="10" label="品牌型号：" bind:change="onChange" id="model"></van-field>
+    <van-field value="{{car.engineNum}}" maxlength="10" label="发动机号：" bind:change="onChange" id="engineNum"></van-field>
+    <van-field value="{{car.registerDate}}" maxlength="10" label="注册日期：" bind:change="onChange" id="registerDate"></van-field>
+    <van-field value="{{car.vin}}" maxlength="20" label="识别代号：" bind:change="onChange" id="vin">
+      <van-button slot="button" size="small" type="primary" bind:tap="getCarType">获取车型信息</van-button>
+    </van-field>
   </van-cell-group>
 
-  <van-cell-group title="{{fileLists[0].length==0?'请上传外观照片':'已上传外观照片：'}}">
-    <van-uploader id="0" file-list="{{fileLists[0]}}" bind:after-read="afterRead" bind:delete="deletePhoto">
-    </van-uploader>
+  <y-cartype show="field" carType="{{ carType }}" bind:confirm="onConfirm" wx:if="{{ b[0] }}"></y-cartype>
+
+  <block wx:if="{{ b[1]}}">
+    <van-cell-group title="{{fileLists[0].length==0?'请上传外观照片':'已上传外观照片：'}}">
+      <van-uploader id="0" file-list="{{fileLists[0]}}" bind:after-read="afterRead" bind:delete="deletePhoto">
+      </van-uploader>
+    </van-cell-group>
+
+    <van-cell-group title="{{fileLists[1].length==0?'请上传驾驶舱照片':'已上传驾驶舱照片：'}}">
+      <van-uploader id="1" file-list="{{fileLists[1]}}" bind:after-read="afterRead" bind:delete="deletePhoto">
+      </van-uploader>
+    </van-cell-group>
+
+    <van-cell-group title="{{fileLists[2].length==0?'请上传发动机舱照片':'已上传发动机舱照片：'}}">
+      <van-uploader id="2" file-list="{{fileLists[2]}}" bind:after-read="afterRead" bind:delete="deletePhoto">
+      </van-uploader>
+    </van-cell-group>
+  </block>
+
+  <van-cell-group title="车辆展示信息：" wx:if="{{ b[2] }}">
+    <van-field value="{{car.carTitle}}" maxlength="20" label="描述标题：" placeholder="请输入车辆描述标题" bind:change="onChange" id="carTitle" required></van-field>
+    <van-field value="{{car.mileage}}" maxlength="10" label="行驶里程：" type="number" placeholder="请输入车辆行驶里程（公里）" bind:change="onChange" id="mileage" required></van-field>
+    <van-field value="{{car.carDescrible}}" maxlength="200" autosize type="textarea" label="详细描述：" placeholder="请输入小于200字的车况描述" bind:change="onChange" id="carDescrible"></van-field>
   </van-cell-group>
 
-  <van-cell-group title="{{fileLists[1].length==0?'请上传驾驶舱照片':'已上传驾驶舱照片：'}}">
-    <van-uploader id="1" file-list="{{fileLists[1]}}" bind:after-read="afterRead" bind:delete="deletePhoto">
-    </van-uploader>
-  </van-cell-group>
-
-  <van-cell-group title="{{fileLists[2].length==0?'请上传发动机舱照片':'已上传发动机舱照片：'}}">
-    <van-uploader id="2" file-list="{{fileLists[2]}}" bind:after-read="afterRead" bind:delete="deletePhoto">
-    </van-uploader>
-  </van-cell-group>
-
-  <text style="color: #aaaaaa;font-size: 13px;margin: 10px;">录入人员：{{ operator.name }}——{{ operator.mobile }}</text>
-  <button type="primary" bindtap="saveCar">保存以上信息</button>
+  <!-- <text style="color: #aaaaaa;font-size: 13px;margin: 10px;">录入人员：{{ operator.name }}——{{ operator.mobile }}</text> -->
+  <button type="primary" open-type="getUserInfo" bindgetuserinfo="saveCar" disabled="{{ !b[3] }}">保存以上信息</button>
   <!--
   <view>
     <navigator url="/pages/submit/submit" open-type="switchTab">到提交页面</navigator>

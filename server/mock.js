@@ -10,13 +10,18 @@ const auctions3 = [];
 auctions3.push({ state: 0, price: 80000, reserve: 100000, carid: 6 });
 auctions3.push({ state: 0, price: 90000, reserve: 110000, carid: 7 });
 const tasks = [];
-tasks.push({ app_token: 'yz', id: 1, state: 0, auctions: auctions1, start_time: new Date('2020-02-27 23:52') });
+tasks.push({ app_token: 'yz', id: 1, state: 0, auctions: auctions1, start_time: new Date('2020-03-23 07:30') });
 tasks.push({ app_token: 'nz', id: 2, state: 0, auctions: auctions2, start_time: new Date('2020-02-27 23:52') });
 tasks.push({ app_token: 'yz', id: 3, state: 0, auctions: auctions3, start_time: new Date('2020-02-27 23:56') });
 
+stages = [
+    { id: 1, start_time: new Date("2020-03-12 21:25").getTime(), state: 1 },
+    { id: 2, start_time: new Date("2020-03-20 08:06").getTime(), state: 1 }
+];
+
 module.exports = {
     tasks,
-    
+    stages,
     states: new Map([
         [1, '未加入竞价'],
         [2, '等待竞价开始'],
@@ -28,18 +33,26 @@ module.exports = {
         [8, '正在办提车手续'],
         [9, '交易结束']
     ]),
-
     //图片信息
-    image: {
-        id: 1,
-        name: '',
-        describle: '',
-        sort: '',
-        url: '',
-        upload_time: Date(),
-        upload_user: {}
+    image:
+    {
+        //"_id" : ObjectId("5e6af4cb61fce4785046349f"),
+        "filename" : "98UAsk5L1584067787115.jpg",
+        "path" : "../uploads/auction/98UAsk5L1584067787115.jpg",
+        "size" : 21613,
+        "create_time" : new Date("2020-03-13T02:49:47.132Z"),
+        "tagId" : "1",
+        "car_plat_num" : "云A00001"
     },
-
+    // image: {
+    //     id: 1,
+    //     name: '',
+    //     describle: '',
+    //     sort: '',
+    //     url: '',
+    //     upload_time: Date(),
+    //     upload_user: {}
+    // },
     // 产品信息
     product: {
         id: 1,  // 唯一识别Id或二维码
@@ -51,17 +64,16 @@ module.exports = {
         images: [],  // 车辆图片
         report: {}  // 检测报告 
     },
-
     // 竞价场次
     stage: {
-        startTime: new Date(),  // 起拍时间
-        reserveTime: 20,    // 保留价时间，单位：minute，超时流拍
-        auctionTime: 20,    // 竞价间隔时间，单位：second
-        auctions: [],    // 竞价对象列表，按顺序依次竞价
-        enable: true    // 有效标示
+        app_token: 'yz',
+        state: 1, // 0: disable, 1: enable, 2: create job for ready, 3: auction, 4: pause， 5: end  
+        start_time: new Date(),  // 起拍时间
+        reserve_time: 120,    // 保留价时间，单位：second，超时流拍
+        auction_time: 20,    // 竞价间隔时间，单位：second, success after timeout
+        current_auction: {}, // current auction to be doing
+        auctions: []    // 竞价对象列表，按顺序依次竞价
     },
-
-
     // 竞价车辆
     auction:
     {
@@ -72,7 +84,6 @@ module.exports = {
         buyer: {},   // 买家
         logs: []    // 竞价记录
     },
-
     // 买家信息
     buyer: {
         id: '',

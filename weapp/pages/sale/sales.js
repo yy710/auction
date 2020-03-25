@@ -1,6 +1,7 @@
-// pages/sale/sales.js
-Page({
+const { request } = require('../../utils/util.js');
+const app = getApp();
 
+Page({
   /**
    * 页面的初始数据
    */
@@ -26,36 +27,8 @@ Page({
       paiC: ['默认排序', '最新发布', '价格最低', '价格最高', '最短里程'],
       saleC: ['不限', '3万以下', '3-5万', '5-10万', '10-15万', '15-20万', '20-30万', '30万以上'],
       carC: ['全部车型', '三厢轿车', '两厢轿车', 'SUV', 'MPV', '跑车', '面包车', '皮卡', '货车'],
-    })
-    getList(this,"")
-  },
-
-  /**
-   * 生命周期函数--监听页面初次渲染完成
-   */
-  onReady: function () {
-
-  },
-
-  /**
-   * 生命周期函数--监听页面显示
-   */
-  onShow: function () {
-
-  },
-
-  /**
-   * 生命周期函数--监听页面隐藏
-   */
-  onHide: function () {
-
-  },
-
-  /**
-   * 生命周期函数--监听页面卸载
-   */
-  onUnload: function () {
-
+    });
+    getList(this,"");
   },
 
   /**
@@ -136,9 +109,10 @@ Page({
   },
   goToDetail: function (e) {
     var carid = e.currentTarget.id
-    wx.navigateTo({
-      url: '../detail/detail?carid=' + carid,
-    });
+    const url = '../detail/detail?carid=' + carid;
+    //wx.navigateTo({ url });
+    //wx.switchTab({ url });
+    wx.reLaunch({ url });
   },
   listenerSearchInput(e){
     this.data.searchInput = e.detail.value;
@@ -147,52 +121,40 @@ Page({
     var values = this.data.searchInput;
     getListForSearch(this,values)
   }
-})
+});
 
+//--------------------------------------------------------------
 function getList(page, values) {
-  var appInstance = getApp()
-  var host = appInstance.globalData.host
-  wx.showLoading({
-    title: '正在获取',
-  })
-  wx.request({
-    url: host+'/searchlist',
-    method: "POST",
-    data: {
-      carType: "",
-      salPrice: "",
-      paiXuType: "",
-    },
-    header: {
-      "Content-Type": "application/json"
-    },
-    success: function (res) {
-      wx.hideLoading()
-      var code = res.data.code
-      if (code === 0) {
-        console.log("content:", res.data.content)
-        page.setData({
-          cars: res.data.content
-        }
-        )
-
-      } else {
-        wx.showModal({
-          title: '提示',
-          content: res.data.msg,
-          showCancel: false
-        })
-      }
-    },
-    fail: function (e) {
-      wx.hideLoading()
-      wx.showModal({
-        title: '提示',
-        content: '网络异常，请稍后重试',
-        showCancel: false
-      })
-    },
-  })
+  wx.showLoading({ title: '正在获取' });
+  // wx.request({
+  //   url: host+'/searchlist',
+  //   method: "GET",
+  //   data: { carType: "", salPrice: "", paiXuType: "" },
+  //   header: { "Content-Type": "application/json" },
+  //   success: function (res) {
+  //     wx.hideLoading(); 
+  //     var code = res.data.code;
+  //     if (code === 0) {
+  //       console.log("content:", res.data.content);
+  //       page.setData({ cars: res.data.content });
+  //     } else {
+  //       wx.showModal({ title: '提示', content: res.data.msg, showCancel: false});
+  //     }
+  //   },
+  //   fail: function (e) {
+  //     wx.hideLoading();
+  //     wx.showModal({ title: '提示', content: '网络异常，请稍后重试', showCancel: false });
+  //   }
+  // });
+  request('/get-cars', {}).then(res => {
+    wx.hideLoading();
+    console.log("get-cars: ", res.data);
+    const cars = res.data.cars;
+    page.setData({ cars });
+  }).catch(err => {
+      wx.hideLoading();
+      wx.showModal({ title: '提示', content: '网络异常，请稍后重试', showCancel: false });
+  });
 }
 
 function getListForCar(page, values) {

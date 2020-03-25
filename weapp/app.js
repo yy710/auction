@@ -1,27 +1,39 @@
+const { request } = require('./utils/util.js');
+
 App({
   onLaunch: function() {
     // 展示本地存储能力
     //var logs = wx.getStorageSync('logs') || [];
     //logs.unshift(Date.now());
     //wx.setStorageSync('logs', logs);
+    this.globalData.sid = wx.getStorageSync('sid');
+    const that = this;
 
-    // 登录
+    // wx login state check
     wx.checkSession({
       success() {
-        //session_key 未过期，并且在本生命周期一直有效
-        console.log("checkSession(): success");
+        if (!that.globalData.sid) {
+          console.log("sid no found! exec login() next!");
+          that.login();
+        } else {
+          //session_key 未过期，并且在本生命周期一直有效
+          console.log("session_key is valid!");
+          // server login state check
+          request('/check-session').then(r => {
+            //console.log("check-session: ", r.data);
+            if (r.data.code) {
+                console.log("check-session success!");
+              } else {
+                console.log("check-session fail!");
+                that.login();
+              }
+            })
+          .catch(err => console.log(err));
+        }
       },
       fail() {
         // session_key 已经失效，需要重新执行登录流程
-        wx.login({
-          success: res => {
-            // 发送 res.code 到后台换取 openId, sessionKey, unionId
-            wx.request({
-              url: `${this.globalData.host}/login?code=${res.code}`,
-              success: res => console.log("login return: ", res.data)
-            })
-          }
-        });
+        that.login();
       }
     })
 
@@ -48,9 +60,34 @@ App({
     });
   },
 
+  login() {
+    const that = this;
+    wx.login({
+      success: res => {
+        // 发送 res.code 到后台换取 openId, sessionKey, unionId
+        request('/login', { code: res.code }).then(res => {
+          console.log("login return: ", res.data);
+          that.globalData.sid = res.data.sid;
+          wx.setStorageSync('sid', res.data.sid);
+        }).catch(err => console.log(err));
+
+        // wx.request({
+        //   url: `${this.globalData.host}/login?code=${res.code}`,
+        //   success: res => {
+        //     console.log("login return: ", res.data);
+        //     that.globalData.sid = res.data.sid;
+        //     wx.setStorageSync('sid', res.data.sid);
+        //   }
+        // })
+      }
+    });
+  },
+
   globalData: {
+    sid: null,
     userInfo: {},
     host: 'https://www.all2key.cn/yz/auction',
-    socketTask: null
+    socketTask: null,
+    apptoken: 'yz_auction'
   }
-})
+});

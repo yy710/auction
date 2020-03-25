@@ -1,0 +1,9 @@
+<van-cell-group title="车型信息" wx:if="{{ show == 'field' }}">
+  <van-field wx:for="{{ _carType }}" wx:key="index" wx:if="{{ t[index] }}" value="{{ item }}" label="{{ t[index] }}" border="{{ false }}" id="{{ index }}" bind:change="onChange" />
+</van-cell-group>
+
+<van-cell-group title="车型信息" wx:if="{{ show == 'cell' }}">
+  <van-cell wx:for="{{ _carType }}" wx:key="index" wx:if="{{ t[index] }}" value="{{ item }}" title="{{ t[index] }}" />
+</van-cell-group>
+
+<van-button wx:if="{{ show == 'field' }}" type="primary" block bind:click="onConfirm">确认以上信息正确</van-button>

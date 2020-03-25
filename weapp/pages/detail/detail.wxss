@@ -1,5 +1,3 @@
-/* pages/detail/detail.wxss */
-
 .detail-container {
   background-color: #f2f2f2;
   min-height: 100%;
