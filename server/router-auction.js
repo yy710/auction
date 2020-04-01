@@ -4,6 +4,8 @@ const assert = require('assert');
 const axios = require('axios');
 const { AppID, AppSecret, JisuAppkey } = require('./config.js');
 const { stages } = require('./mock');
+const { sid2openid } = require('./common.js');
+const WXBizDataCrypt = require('./WXBizDataCrypt');
 const storage = multer.diskStorage({
   destination: function(req, file, cb) {
     cb(null, global.uploadPath);
@@ -95,7 +97,7 @@ module.exports = function(express) {
       stageStartTime: stage.start_time,
       stageState: stage.state,
       stageId: stage.id,
-      startPrice: auction.price/10000,
+      startPrice: auction.price / 10000,
       reservePrice: auction.reserve,
       auctionState: auction.state,
       carInfo: { registerDate, carTitle, mileage, carDescrible },
@@ -164,28 +166,27 @@ module.exports = function(express) {
   router.get('/save-car', async function(req, res, next) {
     const sid = req.query.sid;
     const data = JSON.parse(req.query.data);
-    console.log('save-car: ', data);
+    global.debug && console.log('save-car: ', data);
     const plateNum = data.car.plateNum;
-    const operator = data.userinfo.userInfo;
+    const userInfo = data.userInfo;
     const carType = data.carType;
-    operator.openid = await sid2openid(sid);
-    //console.log('openid: ', data.operator.openid);
-    await global.db
-      .collection('sessions')
-      .updateOne({ openid: operator.openid }, { $set: { userinfo: operator } }, { upsert: false });
-    delete data.userinfo;
+    updateUserInfo(sid, userInfo).catch(err => console.log(err));
+    // operator save to logs
+
+    delete data.userInfo;
     delete data.sid;
     // get images
     const images = await global.db
       .collection('images')
       .find({ car_plat_num: plateNum })
       .toArray();
-    const car = { ...data.car, carType, operator, images };
+    const car = { ...data.car, carType, images };
     try {
       await global.db.collection('cars').replaceOne({ plateNum }, car, { upsert: true });
-      res.json({ msg: 'ok' });
+      res.json({ msg: 'ok', errcode: 0 });
     } catch (error) {
       console.log(error);
+      res.json({ msg: 'opreate db error!', errcode: 1 });
     }
   });
 
@@ -197,6 +198,76 @@ module.exports = function(express) {
       .then(stages => {
         //console.log("get-stages: ", stages);
         res.json({ msg: 'ok', stages });
+      })
+      .catch(err => console.log(err));
+  });
+
+  router.get('/get-mycar', async function(req, res, next) {
+    const { sid } = req.query;
+    assert.notEqual(null, sid);
+    const openid = await sid2openid(sid);
+    console.log('get-mycar openid: ', openid);
+    const mycars = await global.db
+      .collection('auctions')
+      .find({ 'buyer.openid': openid })
+      .toArray();
+    //console.log('mycars: ', mycars);
+    const content = mycars.map(item => {
+      return {
+        plateNum: item.car.plateNum,
+        price: item.price,
+        title: item.car.carTitle,
+        imageURL: 'https://www.all2key.cn/yz/auction/images/' + item.car.images[0].filename
+      };
+    });
+    res.json({ msg: 'ok', content });
+  });
+
+  router.get('/get-history', function(req, res, next) {
+    const { carid } = req.query;
+    assert.notEqual(null, carid);
+    global.db
+      .collection('auctions')
+      .findOne({ 'car.plateNum': carid })
+      .then(auction => {
+        const content = auction.logs
+          .filter(log => log.action === 'addPrice')
+          .map(log => {
+            const { price, addNum } = log.data;
+            return {
+              text: new Date(log.date).toLocaleString(),
+              desc: `${log.data.user.userInfo.nickName}出价: ¥${addNum} + ¥${price} = ¥${parseInt(price) +
+                parseInt(addNum)}`
+            };
+          });
+        res.json({ msg: 'ok', content });
+      })
+      .catch(err => console.log(err));
+  });
+
+  router.get('/get-auctions', function(req, res, next) {
+    const col = global.db.collection('auctions');
+    col
+      .find({})
+      .toArray()
+      .then(auctions => {
+        //console.log("get-stages: ", stages);
+        const content = auctions.map(auction => {
+          return {
+            title: auction.car.carTitle,
+            plateNum: auction.car.plateNum,
+            thumb: 'https://www.all2key.cn/yz/auction/images/' + auction.car.images[0].filename,
+            startTime: auction.startTime,
+            endTime: auction.endTime,
+            startPrice: auction.startPrice,
+            endPrice: auction.price,
+            reservePrice: auction.reserve,
+            //logs: auction.logs,
+            tag: auction.state === 2 ? '已成交' : '流拍',
+            buyer: auction.buyer.userInfo
+          };
+        });
+        res.json({ msg: 'ok', content });
       })
       .catch(err => console.log(err));
   });
@@ -248,14 +319,19 @@ module.exports = function(express) {
 
   router.get('/get-cars', async function(req, res, next) {
     const cars = [];
+    const auctions = await global.db
+      .collection('auctions')
+      .find()
+      .toArray();
     const stages = await global.db
       .collection('stages')
-      .find()
+      .find({ state: { $in: [0, 1, 2] } })
       .toArray();
     stages.forEach(stage => {
       stage.auctions.forEach(auction => {
         const content = {
           id: auction.car.plateNum,
+          tag: { id: 0, type: 'warning', color: 'green', msg: '等待竞价开始' },
           imageURL: 'https://www.all2key.cn/yz/auction/images/' + auction.car.images[0].filename,
           title: auction.car.carTitle,
           carTime: auction.car.registerDate,
@@ -264,10 +340,76 @@ module.exports = function(express) {
           firstPay: auction.car.carType.price,
           price: auction.price
         };
+
+        if (auctions.find(item => item.car.plateNum === content.id)) {
+          content.tag = { id: 2, type: 'primary', color: 'grey', msg: '竞价已结束' };
+        } else if (
+          global.currentAuction &&
+          global.currentAuction.car &&
+          global.currentAuction.car.plateNum === content.id
+        ) {
+          content.tag = { id: 1, type: 'danger', color: 'red', msg: '正在竞价中' };
+        }
+
         cars.push(content);
       });
     });
     res.json({ msg: 'ok', cars });
+  });
+
+  router.get('/update-userinfo', async function(req, res, next) {
+    let { sid, userInfo } = req.query;
+    userInfo = typeof userInfo === 'string' ? JSON.parse(userInfo) : userInfo;
+    await updateUserInfo(sid, userInfo);
+    res.json({ errcode: 0, msg: 'ok' });
+  });
+
+  router.get('/update-userphone', async function(req, res, next) {
+    try {
+      let { sid, encryptedData, iv } = req.query;
+      const sessionKey = (await global.db.collection('sessions').findOne({ sid })).session_key;
+      assert.notEqual(null, sessionKey);
+      const pc = new WXBizDataCrypt(AppID, sessionKey);
+      const data = pc.decryptData(encryptedData, iv);
+      console.log('解密后 data: ', data);
+      // 解密后的 userInfo 数据为
+      // data = {
+      //   "nickName": "Band",
+      //   "gender": 1,
+      //   "language": "zh_CN",
+      //   "city": "Guangzhou",
+      //   "province": "Guangdong",
+      //   "country": "CN",
+      //   "avatarUrl": "http://wx.qlogo.cn/mmopen/vi_32/aSKcBBPpibyKNicHNTMM0qJVh8Kjgiak2AHWr8MHM4WgMEm7GFhsf8OYrySdbvAMvTsw3mo8ibKicsnfN5pRjl1p8HQ/0",
+      //   "unionId": "ocMvos6NjeKLIBqg5Mr9QjxrP1FA",
+      //   "watermark": {
+      //     "timestamp": 1477314187,
+      //     "appid": "wx4f4bc4dec97d474b"
+      //   }
+      // }
+
+      // 解密后的 userphoneNumber 数据为
+      // {
+      //   "phoneNumber": "13580006666",
+      //   "purePhoneNumber": "13580006666",
+      //   "countryCode": "86",
+      //   "watermark": {
+      //     "appid":"APPID",
+      //     "timestamp": TIMESTAMP
+      //   }
+      // }
+      await updateUserPhone(sid, data.phoneNumber);
+      res.json({ errcode: 0, msg: 'ok' });
+    } catch (error) {
+      console.log('update-userphone error: ', error);
+    }
+  });
+
+  router.get('/get-userphone', async function(req, res, next) {
+    const { sid } = req.query;
+    const openid = await sid2openid(sid);
+    const user = await global.db.collection('users').findOne({ openid });
+    res.json({ errcode: 0, msg: 'ok', content: user.phone });
   });
 
   return router;
@@ -297,10 +439,16 @@ function wait500(s = 500) {
   });
 }
 
-function sid2openid(sid) {
-  return global.db
-    .collection('sessions')
-    .findOne({ sid })
-    .then(r => r.openid || null)
-    .catch(err => console.log(err));
+function updateUserInfo(sid, userInfo) {
+  return sid2openid(sid).then(openid => {
+    return global.db.collection('users').updateOne({ openid }, { $set: { userInfo } }, { upsert: true });
+  });
 }
+
+function updateUserPhone(sid, phone) {
+  return sid2openid(sid).then(openid => {
+    return global.db.collection('users').updateOne({ openid }, { $set: { phone } }, { upsert: true });
+  });
+}
+
+function updateUser(sid, obj = {}) {}

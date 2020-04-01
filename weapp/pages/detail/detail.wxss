@@ -21,12 +21,12 @@
   height: 466rpx;
 }
 
-swiper-item image {
+/* swiper-item image {
   width: 100%;
   display: inline-block;
   overflow: hidden;
   height: 466rpx;
-}
+} */
 
 .swiper-container .dots {
   position: absolute;

@@ -1,71 +1,42 @@
+const { request } = require('../../utils/util');
+
 Page({
   data: {
     hasUserInfo: true,
     userInfo: null,
-    classics: [],
-    myBooksCount: 0
+    cars: []
   },
 
-  onShow: function(options) {
-    this.getMyFavor()
-    this.hasGottenUserInfo()
-    this.getMyBookCount()
+  onShow: function (options) {
+    this.hasGottenUserInfo();
+    this.getMycar();
   },
 
-  getMyBookCount() {
-    
+  getMycar() {
+    request('/get-mycar', {}).then(res => {
+      console.log("get-mycar: ", res.data);
+      const cars = res.data.content;
+      this.setData({ cars });
+    }).catch(err => console.log(err));
   },
 
-  hasGottenUserInfo: function() {
+  hasGottenUserInfo: function () {
     wx.getSetting({
-      success: (data) => {
+      success: data => {
         if (data.authSetting['scope.userInfo']) {
-          wx.getUserInfo({
-            success: (data) => {
-              this.setData({
-                hasUserInfo: true,
-                userInfo: data.userInfo
-              })
-            }
-          })
+          wx.getUserInfo({ success: data => this.setData({ hasUserInfo: true, userInfo: data.userInfo }) });
         } else {
-          this.setData({
-            hasUserInfo: false
-          })
+          this.setData({ hasUserInfo: false });
         }
       }
-    })
+    });
   },
 
-  onGetUserInfo: function(event) {
-    let userInfo = event.detail.userInfo
+  onGetUserInfo: function (event) {
+    let userInfo = event.detail.userInfo;
     if (userInfo) {
-      this.setData({
-        hasUserInfo: true,
-        userInfo: userInfo
-      })
+      this.setData({ hasUserInfo: true, userInfo: userInfo });
     }
-  },
-
-  getMyFavor: function() {
-   
-  },
-
-  onPreviewTap: function(event) {
-    wx.navigateTo({
-      url: '/pages/classic-detail/index?cid=' + event.detail.cid + '&type=' + event.detail.type
-    })
-  },
-  onJumpToAbout: function(event) {
-    wx.navigateTo({
-      url: '/pages/about/about',
-    })
-  },
-
-  onStudy: function(event) {
-    wx.navigateTo({
-      url: '/pages/course/course',
-    })
   },
 
   onShareAppMessage() {

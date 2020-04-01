@@ -2,10 +2,6 @@ const { request } = require('./utils/util.js');
 
 App({
   onLaunch: function() {
-    // 展示本地存储能力
-    //var logs = wx.getStorageSync('logs') || [];
-    //logs.unshift(Date.now());
-    //wx.setStorageSync('logs', logs);
     this.globalData.sid = wx.getStorageSync('sid');
     const that = this;
 
@@ -70,15 +66,6 @@ App({
           that.globalData.sid = res.data.sid;
           wx.setStorageSync('sid', res.data.sid);
         }).catch(err => console.log(err));
-
-        // wx.request({
-        //   url: `${this.globalData.host}/login?code=${res.code}`,
-        //   success: res => {
-        //     console.log("login return: ", res.data);
-        //     that.globalData.sid = res.data.sid;
-        //     wx.setStorageSync('sid', res.data.sid);
-        //   }
-        // })
       }
     });
   },

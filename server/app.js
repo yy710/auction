@@ -96,7 +96,7 @@ app.use((req, res, next) => {
       socket.destroy();
     }
   });
-  
+
   const port = 443;
   server.listen(port, function() {
     console.log('https server is running on port ', port);
@@ -112,7 +112,7 @@ app.use((req, res, next) => {
       try {
         // get tasks data from mongodb in one houre
         const _tasks = await findTasks();
-        console.log("_tasks", _tasks);
+        console.log('_tasks', _tasks);
         this.tasks = tasks2jobs(wsss, _tasks);
       } catch (error) {
         console.log(error);
@@ -137,7 +137,7 @@ function cb(obj) {
 function findTasks() {
   return global.db
     .collection('stages')
-    .aggregate([{ $sort: { start_time: 1 } }])
+    .aggregate([{ $match: { state: 0 } }, { $sort: { start_time: 1 } }])
     .toArray()
     .catch(err => console.log(err));
 }

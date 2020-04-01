@@ -35,6 +35,8 @@ Component({
     },
     hide: function() {
       // 页面被隐藏
+      console.log("parent page be hide!");
+      //socketTask.close().catch(err => console.log(err));
     },
     resize: function(size) {
       // 页面尺寸变化
@@ -43,8 +45,7 @@ Component({
 
   // 自小程序基础库版本 2.2.3 起，组件的的生命周期也可以在 lifetimes 字段内进行声明
   lifetimes: {
-    attached: function() {
-      // 在组件实例进入页面节点树时执行
+    created: function(){
       socketTask =  wx.connectSocket({
         url: 'wss://www.all2key.cn/yz',
         header: {
@@ -54,14 +55,16 @@ Component({
           'apptoken': 'yz_auction'
         }
       });
+    },
 
+     // 在组件实例进入页面节点树时执行
+    attached: function() {
       socketTask.onOpen(res => {
         console.log("socket open: ", res);
-        //this.sayHellow();
       });
 
       socketTask.onMessage(res => {
-        console.log("recive: ", res);
+        console.log("recive message: ", res);
 
         if(!res.data)return 0;
         const data = JSON.parse(res.data);
@@ -93,6 +96,7 @@ Component({
             // next car auction
             this.triggerEvent("changeCar", { carid: data.carid });
           }
+          // because use is browing, no start next auction
           return 1;
         } 
 
@@ -117,7 +121,7 @@ Component({
     detached: function() {
       // 在组件实例被从页面节点树移除时执行
       console.log("component detached!");
-      socketTask.close();
+      socketTask.close().catch(err => console.log(err));
     }
   },
 
@@ -147,7 +151,7 @@ Component({
     },
 
     addPrice(e){
-      //console.log("addPrice: ", e);
+      console.log("addPrice: ", e);
       wx.showModal({
         title: '提示',
         content: '出价后20秒内无人加价即可成交，确认出价？',
@@ -170,22 +174,6 @@ Component({
           } else if (res.cancel) {
             console.log('用户点击取消');
           }
-        }
-      });
-    },
-
-    sayHellow() {
-      //console.log("addPrice: ", e);
-      const data = JSON.stringify({
-        action: 'sayHellow',
-        carid: this.properties.carid,
-        user: sid
-      });
-      //if (this.data.disableAdd) return 0;
-      socketTask.send({
-        data,
-        success: function () {
-          console.log("socket send data: ", data);
         }
       });
     }

@@ -1,5 +1,5 @@
 <view class='detail-container'>
-  <button wx:if="{{!hasUserInfo && canIUse}}" open-type="getUserInfo" bindgetuserinfo="getUserInfo"> 获取头像昵称 </button>
+  <!-- <button wx:if="{{!hasUserInfo && canIUse}}" open-type="getUserInfo" bindgetuserinfo="getUserInfo"> 获取头像昵称 </button> -->
 
   <y-swiper imageURLs="{{detail.imageURLs}}"></y-swiper>
 
@@ -35,7 +35,7 @@
   <!-- show photos of car -->
   <view class='car_image_container'>
     <view style='height:10px;width:100%;'></view>
-    <view class='car_image_box' wx:for="{{detail.imageURLs}}" wx:key="{{index}}">
+    <view class='car_image_box' wx:for="{{detail.imageURLs}}" wx:key="index">
       <image mode="widthFix" class='car_image' src="{{item}}" data-index='{{index}}' bindtap='previewImg'></image>
     </view>
   </view>

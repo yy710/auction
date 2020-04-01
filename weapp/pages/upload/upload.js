@@ -91,11 +91,10 @@ Page({
   },
 
   saveCar(e) {
-    const userinfo = e.detail;
-    console.log("bindgetuserinfo: ", userinfo);
-
+    const { userInfo } = e.detail;
+    //console.log("bindgetuserinfo: ", userInfo);
     // check user auther
-    if (userinfo.errMsg != "getUserInfo:ok"){
+    if (!userInfo){
       wx.showToast({
         title: '请同意授权用户信息！',
         duration: 2000
@@ -103,8 +102,10 @@ Page({
       return 0;
     }
 
-    const data ={ data: { car: this.data.car, carType: this.data.carType, userinfo } };
-    console.log("saveCar(): ", data.data);
+    app.globalData.userInfo = userInfo;
+
+    const data ={ data: { car: this.data.car, carType: this.data.carType, userInfo } };
+    //console.log("saveCar(): ", data.data);
     request('/save-car', data).then(res => {
       console.log("save-car: ", res.data);
       wx.redirectTo({ url: '../auctions/auctions?carid=' + this.data.car.plateNum });

@@ -51,10 +51,10 @@ class Task {
     this.data = data;
     this.logger = new Logger('auction');
     this.wss = wsss.get(data.app_token);
-    this.data.state = 1;
+    this.updateState(1);
     this.countDown = new CountDown();
     // currentauction: {
-    //   state  0: ready, 1: go, 2: end, 3: 流拍
+    //   state  0: ready, 1: go, 2: sold, 3: 流拍
     //   price  起拍价
     //   reserve  保留价
     //   carid 产品id
@@ -67,14 +67,31 @@ class Task {
     //this.initCountDown();
   }
 
+  updateState(state) {
+    this.data.state = state;
+    return updateStageState(this.data.id, state);
+  }
+
   initCountDown() {
     this.countDown.on('timeout', time => {
       // [debug]
       console.log('timeout: ', time);
       this.currentAuction.state = 2; // auction end
       // save this.currentAuction to db
-
-      this.nextAuction();
+      global.db
+        .collection('logs')
+        .find({ action: 'addPrice', 'data.carid': this.currentAuction.car.plateNum })
+        .toArray()
+        .then(logs => {
+          const buyer = logs.filter(log => log.action === 'addPrice').pop().data.user;
+          delete buyer._id;
+          this.currentAuction.state = isSold(this.currentAuction) ? 2 : 3;
+          global.db
+            .collection('auctions')
+            .insertOne({ ...this.currentAuction, buyer, logs, endTime: new Date().getTime() });
+        })
+        .then(() => this.nextAuction())
+        .catch(err => console.log(err));
     });
   }
 
@@ -110,7 +127,7 @@ class Task {
     if (typeof f == 'function') this.exec = f;
     return date => this.exec(date);
   }
-
+ 
   exec(date) {
     // debug
     console.log('job start at ', date);
@@ -118,7 +135,7 @@ class Task {
 
     this.initWss();
     this.initCountDown();
-    this.data.state = 2; // task start, 2: doing
+    this.updateState(2); // task start, 2: doing
     this.addListenerToAllSocket();
     this.nextAuction();
   }
@@ -158,25 +175,6 @@ class Task {
 
     this.sayHellow(socket);
     this.addListenerToAllSocket();
-
-    // socket.on('message', _msg => {
-    //   try {
-    //     // [debug]
-    //     console.log('Received message: ', _msg);
-    //     const msg = JSON.parse(_msg);
-    //     // save to logs
-    //     //this.logger.save('receiveMsg', msg);
-    //     if (msg.action === 'addPrice') {
-    //       this.addPrice(msg);
-    //     }
-    //   } catch (error) {
-    //     console.log(error);
-    //   }
-    // });
-
-    // socket.on('close', function() {
-    //   console.log('websocket connection closed');
-    // });
   }
 
   sayHellow(socket) {
@@ -201,7 +199,7 @@ class Task {
     if (!this.currentAuction) {
       // [debug]
       console.log('task ', this.data.id, 'completed!');
-
+      this.updateState(3);
       this.closeAllSocket();
       //this.wss.removeAllListeners('connection');
     } else {
@@ -209,6 +207,9 @@ class Task {
       console.log('next auction carid: ', this.currentAuction.car.plateNum);
 
       this.currentAuction.state = 1; // 1: go
+      this.currentAuction.startPrice = this.currentAuction.price;
+      this.currentAuction.startTime = new Date().getTime();
+      global.currentAuction = this.currentAuction;
       this.countDown.reset(2 * 60);
     }
     this.broadcast();
@@ -219,7 +220,7 @@ class Task {
     this.wss.clients.forEach(client => {
       // SocketServer: { CONNECTING: 0, OPEN: 1, CLOSING: 2, CLOSED: 3 }
       if (client.readyState === 1) {
-        client.close(2020, "stage completed!");
+        client.close();
       }
     });
   }
@@ -258,20 +259,21 @@ class Task {
     }
     this.broadcast();
     // save to logs
+    delete user._id;
+    msg.user = user; 
     this.logger.save('addPrice', msg);
     return this;
   }
 }
 
 class Logger {
-  constructor(tag, col = global.db.collection('logs')) {
+  constructor(tag = ['auction'], col = global.db.collection('logs')) {
     this.tag = tag;
     this.col = col;
   }
 
   save(action, data) {
-    this.col.insertOne({ tag: this.tag, date: new Date(), action, data });
-    return this;
+    return this.col.insertOne({ tag: this.tag, date: new Date(), action, data }).catch(err => console.log(err));
   }
 
   find() {}
@@ -294,8 +296,27 @@ function mergeOptions(options, defaults) {
 }
 
 function getUser(sid) {
-  const col = global.db.collection('sessions');
-  return col.findOne({ sid });
+  return sid2openid(sid).then(openid => global.db.collection('users').findOne({ openid }));
 }
 
-module.exports = { Task, CountDown };
+function isSold(auc) {
+  return parseInt(auc.price) >= parseInt(auc.reserve);
+}
+
+function updateStageState(id, state) {
+  global.debug && console.log("updateStageState: id= ", id, " state = ", state);
+  return global.db
+    .collection('stages')
+    .updateOne({ id }, { $set: { state } }, { upsert: false })
+    .catch(err => console.log(err));
+}
+
+function sid2openid(sid) {
+  return global.db
+    .collection('sessions')
+    .findOne({ sid })
+    .then(r => r.openid || null)
+    .catch(err => console.log(err));
+}
+
+module.exports = { Task, CountDown, sid2openid };

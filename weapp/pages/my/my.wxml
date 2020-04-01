@@ -1,30 +1,24 @@
 <view class="container">
-  <image src="/images/my/my@bg.png" class="bg"></image>
-  <img-btn-cmp wx:if="{{!hasUserInfo}}" open-type="getUserInfo" class="avatar-position" bind:getuserinfo="onGetUserInfo">
-    <image slot="img" class="avatar" src="/images/my/my.png" />
-  </img-btn-cmp>
-  <view class="avatar-container avatar-position">
-    <image src="{{userInfo.avatarUrl}}" wx:if="{{hasUserInfo}}" class="avatar" />
-    <open-data wx:if="{{hasUserInfo}}" type="userNickName"></open-data>
-  </view>
-  <view class="about-container">
-    <view bind:tap="onJumpToAbout" class="about-us">
-      <image src="/images/my/about.png" />
-      <text class="description">关于我们</text>
-    </view>
-    <view class="about-us">
-      <text class="book-num">{{myBooksCount}}</text>
-      <text class="description">我的总成绩</text>
-    </view>
-  </view>
-  <view class="like-container">
-    <image class=".headline" src="/images/my/like.png" />
-    <view class="preview-container">
-      <block wx:for="{{classics}}" wx:key="">
-        <previe-cmp bind:tap="onPreviewTap" class="preview" classic="{{item}}" />
-      </block>
-    </view>
-  </view>
+	<!-- <image src="/images/my/my@bg.png" class="bg"></image> -->
+	<img-btn-cmp wx:if="{{!hasUserInfo}}" open-type="getUserInfo" class="avatar-position" bind:getuserinfo="onGetUserInfo">
+		<image slot="img" class="avatar" src="/images/my/my.png" />
+	</img-btn-cmp>
+	<view class="avatar-container avatar-position">
+		<image src="{{userInfo.avatarUrl}}" wx:if="{{hasUserInfo}}" class="avatar" />
+		<open-data wx:if="{{hasUserInfo}}" type="userNickName"></open-data>
+	</view>
 </view>
 
-<image bind:tap="onStudy" class="study" src="/images/my/study.png"></image>
+<van-divider contentPosition="center" customStyle="color: #1989fa;border-color: #1989fa;font-size: 14px;">已成交车辆</van-divider>
+
+<view>
+	<van-grid column-num="2" border="{{ true }}" square gutter="{{ 5 }}">
+		<van-grid-item use-slot wx:for="{{ cars }}" wx:key="plateNum">
+			<image mode="aspectFit" style="width: 100%;margin-bottom: 5px;padding: 0px" src="{{ item.imageURL }}" />
+			<view>
+				<text class='search-item-title'>{{item.title}}</text>
+				<text class='price'>成交价{{item.price/10000}}万</text>
+			</view>
+		</van-grid-item>
+	</van-grid>
+</view>

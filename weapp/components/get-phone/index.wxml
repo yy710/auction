@@ -1,0 +1,1 @@
+<van-button plain type="primary" open-type="getPhoneNumber" bindgetphonenumber="getPhoneNumber" wx:if="{{ !phone }}">报名参加竞拍</van-button>

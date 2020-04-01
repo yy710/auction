@@ -32,10 +32,9 @@ Page({
   onLoad: function(options) {
     console.log("onLoad options: ", options);
     const carid = options.carid;
-    if(carid){
-      this.setData({ carid });
-      getStage(carid).then(detail => this.setData({ detail })).catch(err => console.log(err));
-    }
+    // init auction of component
+    this.setData({ carid });
+    return 1;
 
     //  wx office write ---------------------------------
     if (app.globalData.userInfo) {
@@ -61,7 +60,16 @@ Page({
     if (nickName === '学游泳的鱼') {
       //this.setData({ isAdmin: true });
     } 
+  },
 
+  onShow(){
+    console.log("page detail onShow!");
+    getStage(this, this.data.carid);
+  },
+
+  onHide(){
+    console.log("page detail onHide!");
+    this.setData({ carid: null });
   },
 
   onShareAppMessage: function() {
@@ -127,21 +135,21 @@ Page({
 });
 
 // -----------------------------------------------------
-function getStage(carid) {
+function getStage(page, carid) {
+  if(!carid)return 0;
   wx.showLoading({ title: '正在加载' });
 
-  return request('/get-stage', { carid }).then(res => {
+  request('/get-stage', { carid }).then(res => {
     // res.data : { code: 0, msg: "ok", car: {} }
     console.log("get-stage: ", res.data);
-    var code = res.data.code;
+    const code = res.data.code;
     wx.hideLoading();
     if (code === 0) {
-      wx.hideLoading();
-      return res.data.content;
+      const detail = res.data.content;
+      page.setData({ detail });
     } else {
       wx.showModal({ title: '提示', content: res.data.msg, showCancel: false });
     }
-    //return res.data.stage;
   }).catch(err => {
     console.log(err);
     wx.hideLoading();

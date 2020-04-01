@@ -1,0 +1,3 @@
+<view>
+  <van-steps direction="vertical" steps="{{ steps }}" active="{{ active }}" />
+</view>

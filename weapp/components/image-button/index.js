@@ -1,4 +1,3 @@
-// components/image-button/index.html.js
 Component({
   /**
    * 组件的属性列表

@@ -1,7 +1,7 @@
 <view class="swiper-container" wx:if="{{!video.video_url}}">
 
   <swiper class="swiper_box" autoplay="{{autoplay}}" interval="{{interval}}" duration="{{duration}}" circular>
-    <block wx:for="{{imageURLs}}" wx:key="{{index}}">
+    <block wx:for="{{imageURLs}}" wx:key="index">
       <swiper-item>
         <image src="{{item}}" class="slide-image" width="355" height="150" mode="aspectFit" lazy-load="true" />
       </swiper-item>

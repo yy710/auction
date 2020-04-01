@@ -1,0 +1,20 @@
+<view>
+  <!-- <van-divider contentPosition="center">场次1</van-divider> -->
+  <van-card wx:for="{{ auctions }}" wx:key="plateNum" tag="{{ item.tag }}" id="{{ item.plateNum }}" price="{{ item.endPrice }}" origin-price="{{ item.startPrice }}" title="{{ item.title }}" thumb="{{ item.thumb }}" bind:tap="toHistory" >
+    <text slot="num">保留价：{{ item.reservePrice }}</text>
+    <view slot="desc">
+      <van-row>
+        <van-col span="8">车牌号：</van-col>
+        <van-col span="16">{{ item.plateNum }}</van-col>
+      </van-row>
+      <van-row>
+        <van-col span="8">买家昵称：</van-col>
+        <van-col span="16"><van-icon name="{{ item.buyer.avatarUrl }}" size="20px" />{{ item.buyer.nickName }}</van-col>
+      </van-row>
+      <van-row>
+        <van-col span="8">买家电话：</van-col>
+        <van-col span="16">13888888888</van-col>
+      </van-row>
+    </view>
+  </van-card>
+</view>
