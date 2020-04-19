@@ -73,25 +73,30 @@ class Task {
   }
 
   initCountDown() {
-    this.countDown.on('timeout', time => {
-      // [debug]
-      console.log('timeout: ', time);
-      this.currentAuction.state = 2; // auction end
+    this.countDown.on('timeout', (time) => {
+      global.debug && console.log('timeout: ', time);
+      // set auction end flag
+      this.currentAuction.state = 2;
       // save this.currentAuction to db
       global.db
         .collection('logs')
         .find({ action: 'addPrice', 'data.carid': this.currentAuction.car.plateNum })
         .toArray()
-        .then(logs => {
-          const buyer = logs.filter(log => log.action === 'addPrice').pop().data.user;
-          delete buyer._id;
+        .then((logs) => {
+          let buyer = {};
+          if (logs) {
+            const log = logs.filter((log) => log.action === 'addPrice').pop();
+            buyer = log && log.data ? log.data.user : {};
+            delete buyer._id;
+          }
+
           this.currentAuction.state = isSold(this.currentAuction) ? 2 : 3;
-          global.db
+          return global.db
             .collection('auctions')
             .insertOne({ ...this.currentAuction, buyer, logs, endTime: new Date().getTime() });
         })
         .then(() => this.nextAuction())
-        .catch(err => console.log(err));
+        .catch((err) => console.log(err));
     });
   }
 
@@ -104,7 +109,7 @@ class Task {
     //  state: this.auc.state,
     //  carid: this.auc.carid
     //}
-    this.wss.clients.forEach(client => {
+    this.wss.clients.forEach((client) => {
       // SocketServer: { CONNECTING: 0, OPEN: 1, CLOSING: 2, CLOSED: 3 }
       if (client.readyState === 1) {
         client.send(JSON.stringify(data));
@@ -125,9 +130,9 @@ class Task {
 
   getExec(f = null) {
     if (typeof f == 'function') this.exec = f;
-    return date => this.exec(date);
+    return (date) => this.exec(date);
   }
- 
+
   exec(date) {
     // debug
     console.log('job start at ', date);
@@ -141,11 +146,11 @@ class Task {
   }
 
   addListenerToAllSocket() {
-    this.wss.clients.forEach(socket => {
+    this.wss.clients.forEach((socket) => {
       if (socket.readyState === 1 && socket.listenerCount('message') === 0) {
         console.log('addListenerToAllSocket!');
         //if (socket.listenerCount('message') > 0) socket.off('message');
-        socket.on('message', _msg => {
+        socket.on('message', (_msg) => {
           try {
             // [debug]
             console.log('Received message: ', _msg);
@@ -160,7 +165,7 @@ class Task {
           }
         });
 
-        socket.on('close', function() {
+        socket.on('close', function () {
           console.log('websocket connection closed');
         });
       }
@@ -217,7 +222,7 @@ class Task {
   }
 
   closeAllSocket() {
-    this.wss.clients.forEach(client => {
+    this.wss.clients.forEach((client) => {
       // SocketServer: { CONNECTING: 0, OPEN: 1, CLOSING: 2, CLOSED: 3 }
       if (client.readyState === 1) {
         client.close();
@@ -247,7 +252,7 @@ class Task {
 
     const user = await getUser(msg.user);
     if (!user) {
-      console.log('addPrice: sid error!');
+      console.log('addPrice: deny!');
       return this;
     }
 
@@ -260,7 +265,7 @@ class Task {
     this.broadcast();
     // save to logs
     delete user._id;
-    msg.user = user; 
+    msg.user = user;
     this.logger.save('addPrice', msg);
     return this;
   }
@@ -273,7 +278,7 @@ class Logger {
   }
 
   save(action, data) {
-    return this.col.insertOne({ tag: this.tag, date: new Date(), action, data }).catch(err => console.log(err));
+    return this.col.insertOne({ tag: this.tag, date: new Date(), action, data }).catch((err) => console.log(err));
   }
 
   find() {}
@@ -283,7 +288,7 @@ class Logger {
 
 function wssCb(obj) {
   assert.equal('function', typeof obj.handleConnection);
-  return function(socket, req) {
+  return function (socket, req) {
     obj.handleConnection(socket, req);
   };
 }
@@ -296,7 +301,7 @@ function mergeOptions(options, defaults) {
 }
 
 function getUser(sid) {
-  return sid2openid(sid).then(openid => global.db.collection('users').findOne({ openid }));
+  return sid2openid(sid).then((openid) => global.db.collection('users').findOne({ openid }));
 }
 
 function isSold(auc) {
@@ -304,19 +309,19 @@ function isSold(auc) {
 }
 
 function updateStageState(id, state) {
-  global.debug && console.log("updateStageState: id= ", id, " state = ", state);
+  global.debug && console.log('updateStageState: id= ', id, ' state = ', state);
   return global.db
     .collection('stages')
     .updateOne({ id }, { $set: { state } }, { upsert: false })
-    .catch(err => console.log(err));
+    .catch((err) => console.log(err));
 }
 
 function sid2openid(sid) {
   return global.db
     .collection('sessions')
     .findOne({ sid })
-    .then(r => r.openid || null)
-    .catch(err => console.log(err));
+    .then((r) => r && r.openid)
+    .catch((err) => console.log(err));
 }
 
 module.exports = { Task, CountDown, sid2openid };

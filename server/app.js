@@ -14,15 +14,18 @@ const schedule = require('node-schedule');
 //const http = require('http');
 //const xmlparser = require('express-xml-bodyparser');
 //const axios = require('axios');
-//const cors = require('cors');
+const cors = require('cors');
 const MongoClient = require('mongodb').MongoClient;
 // 载入配置文件
 const { httpsOptions, dbUrl, debug, uploadPath } = require('./config.js');
 global.uploadPath = uploadPath;
 global.debug = debug;
 const routerAuction = require('./router-auction');
+const routerLottery = require('./router-lottery');
+const setWss3 = require('./ws-lottery');
 //const EventProxy = require('eventproxy');
 //const session = require('./session.js').session;
+app.use(cors());
 app.use((req, res, next) => {
   console.log('req.originalUrl: ', req.originalUrl);
   req.data = {};
@@ -57,32 +60,41 @@ app.use((req, res, next) => {
 
   app.use('/yz/auction/images', express.static(global.uploadPath));
   app.use('/yz/auction', routerAuction(express));
+  app.use('/yz/lottery', routerLottery(express));
   app.use('/mymind', express.static('../my-mind'));
   app.use('/mindmaps', express.static('../mindmaps/dist'));
   app.use('/drawio', express.static('../drawio/src/main/webapp'));
+  app.use('/yzcj', express.static('./h5'));
 
   //----------------------------------------------------------------
   const server = https.createServer(httpsOptions, app);
   //const wss = new SocketServer.Server({ server });
   const wss1 = new WebSocket.Server({ noServer: true });
   const wss2 = new WebSocket.Server({ noServer: true });
+  const wss3 = new WebSocket.Server({ noServer: true });
+  setWss3(wss3);
+  global.wss3 = wss3;
+
   const wsss = new Map([
     ['yz_auction', wss1],
-    ['nz', wss2]
+    ['nz', wss2],
+    ['yz_lottery', wss3]
   ]);
 
   server.on('upgrade', function upgrade(request, socket, head) {
-    //console.log('websocket upgrade request.heders: ', request.headers);
+    //console.log('websocket upgrade request.headers: ', request.headers);
+    //console.log('websocket upgrade request.url: ',request.url);
     const pathname = url.parse(request.url).pathname;
+    //console.log('pathname: ', pathname);
     const apptoken = request.headers.apptoken;
-    socket.sid = request.headers.token;
+    socket.sid = request.headers.token || request.headers.sid;
     //global.db.collection('sessions').findOneAndUpdate();
 
-    if (!wsss.has(apptoken)) {
-      console.log('websoket upgrade apptoken error!');
-      socket.destroy();
-      return 0;
-    }
+    // if (!wsss.has(apptoken)) {
+    //   console.log('websocket upgrade apptoken error!');
+    //   socket.destroy();
+    //   return 0;
+    // }
 
     if (pathname === '/yz') {
       wss1.handleUpgrade(request, socket, head, function done(ws) {
@@ -92,7 +104,12 @@ app.use((req, res, next) => {
       wss2.handleUpgrade(request, socket, head, function done(ws) {
         wss2.emit('connection', ws, request);
       });
-    } else {
+    } else if(pathname === '/lottery'){
+      wss3.handleUpgrade(request, socket, head, function done(ws) {
+        wss3.emit('connection', ws, request);
+      });
+    }
+    else {
       socket.destroy();
     }
   });

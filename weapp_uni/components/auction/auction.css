@@ -1,0 +1,23 @@
+.item {
+  display: inline-block;
+  width: 30px;
+  margin: 5px;
+  padding: 10px;
+  color: #fff;
+  font-size: 26px;
+  text-align: center;
+  background-color: #1989fa;
+  border-radius: 2px;
+}
+
+.item2 {
+  display: inline-block;
+  width: 26px;
+  margin: 2px;
+  padding: 5px;
+  color: #fff;
+  font-size: 22px;
+  text-align: center;
+  background-color: #1989fa;
+  border-radius: 2px;
+}

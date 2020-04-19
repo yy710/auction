@@ -4,3 +4,5 @@ server/config.js
 server/node_modules
 .vscode/
 stuff/
+weapp_uni/unpackage
+weapp_uni/node_modules
