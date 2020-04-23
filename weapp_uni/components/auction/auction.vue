@@ -1,6 +1,6 @@
 <template>
   <view>
-    <y-countdown ref="countDown" v-if="true" :time="time" :auto-start="true" @finish="finished">
+    <y-countdown ref="countDown" v-if="show[0]" :time="time" :auto-start="true" @finish="finished">
       <template v-slot="timeData">
         <view style="padding-left:10px">
           <text>距离竞价结束还剩余</text>
@@ -14,14 +14,14 @@
       </template>
     </y-countdown>
 
-    <van-grid clickable>
+    <!-- <van-grid clickable>
       <van-grid-item text="开始" icon="play-circle-o" @click="start" />
       <van-grid-item text="暂停" icon="pause-circle-o" @click="pause" />
       <van-grid-item text="重置" icon="replay" @click="reset" />
       <van-grid-item text="更新" icon="update" @click="updateTime" />
-    </van-grid>
+    </van-grid> -->
 
-    <y-countdown ref="countDown2" v-if="show[1]" :time="time3" :auto-start="true">
+    <y-countdown ref="countDown2" v-if="show[1]" :time="time3" :auto-start="true" @finish="finished2">
       <template v-slot="timeData">
         <view style="padding-left:10px">
           <text>距离竞价开始还剩余</text>
@@ -72,20 +72,30 @@ global['__wxVueOptions'] = { components: { 'y-getphone': yGetphone, 'y-countdown
 global['__wxRoute'] = 'components/auction/auction';
 const app = getApp();
 const sid = wx.getStorageSync('sid');
-let socketTask = null;
 
 Component({
   properties: {
-    carid: String,
+    carid: {
+      type: String,
+      value: null,
+      observer(newValue, oldValue){
+        console.log('component/auction/carid/newValue: %s, oldValue: %s', newValue, oldValue);
+        this.sayHello();
+      }
+    },
     time2: {
       type: Number,
       value: 0,
       observer(newValue, oldValue) {
+        console.log('component/auction/time2/newValue: %s, oldValue: %s', newValue, oldValue);
         const time3 = newValue - new Date().getTime();
-        console.log('time: ', time3);
+        console.log('change time: ', time3);
         if (time3 > 0) {
-          this.setData({ time3, show: [0, 1] });
-          //this.$refs.countDown2.reset();
+          this.setData({ show: [0, 1], time3 });
+        } else {
+          this.setData({ show: [1, 0], time3 });
+          // get data from by websocket
+          this.sayHello();
         }
       }
     }
@@ -96,100 +106,40 @@ Component({
     show: [0, 0],
     price: 0,
     socketMsg: '',
-    time: 20000,
-    time3: 120000,
+    time: 2*60*1000,
+    time3: 20*60*1000,
     state: 'ready', // ready | go | stop
-    _carid: null,
+    lastCarid: null, // store carid from webSocket for next action
     disableAdd: false
   },
 
-  // 自小程序基础库版本 2.2.3 起，组件的的生命周期也可以在 lifetimes 字段内进行声明
   lifetimes: {
     created: function() {
-      socketTask = wx.connectSocket({
-        url: 'wss://www.all2key.cn/yz',
-        header: { 'content-type': 'appliction/json', client: 'weapp', token: sid, apptoken: 'yz_auction' },
-        complete() {}
-      });
+      console.log('components auction created!');
+      this.socketTask = socketConnect(this);
     },
 
-    // 在组件实例进入页面节点树时执行
-    attached: function() {
-      const _this = this;
-      socketTask.onOpen(res => {
-        console.log('socket open: ', res);
-        // sent auth info to server
-        
-      });
-
-      socketTask.onMessage(res => {
-        console.log('recive message: ', res);
-
-        if (!res.data) return 0;
-        const data = JSON.parse(res.data);
-        const price = parseInt(data.price);
-
-        if (!data.carid) {
-          // no auctioning
-          socketTask.close();
-          console.log('no auctioning! websocket closed!');
-          return 0;
-        } else if (!this.properties.carid) {
-          // click auction button
-          this.triggerEvent('changeCar', { carid: data.carid });
-        } else if (this.properties.carid !== data.carid) {
-          // user is browsing car
-          if (!this.data._carid) {
-            wx.showModal({
-              title: '当前正在竞价',
-              content: '是否切换到竞价页面？',
-              success: res => {
-                if (res.confirm) {
-                  this.triggerEvent('changeCar', { carid: data.carid });
-                } else if (res.cancel) {
-                  console.log('用户点击取消');
-                }
-              }
-            });
-          } else {
-            // next car auction
-            this.triggerEvent('changeCar', { carid: data.carid });
-          }
-          // because use is browing, no start next auction
-          return 1;
-        }
-
-        this.setData({
-          show: [1, 0],
-          price,
-          time: parseInt(data.time),
-          state: data.state,
-          _carid: data.carid,
-          disableAdd: data.time < 0
-        });
-        this.triggerEvent('changePrice', { price, reachReserve: data.price >= data.reserve });
-        //_this.reset();
-        //_this.start();
-      });
-
-      socketTask.onClose(e => {
-        console.log('socket close: ', e);
-      });
+    attached(){
+      console.log('components/auction attached!');
     },
-
-    detached: function() {
-      // 在组件实例被从页面节点树移除时执行
-      console.log('component detached!');
-      socketTask.close();
-    },
-
-    beforeDestroy() {
-      console.log('component hide!');
-      socketTask.close();
+    
+    detached(){
+      console.log('components/auction detached!');
+      this.socketTask.close();
     }
   },
 
   methods: {
+    test() {
+      console.log('refs test!');
+    },
+    
+    sayHello() {
+      //console.log('auction.sayHello()');
+      const data = JSON.stringify({ action: 'hello' });
+      this.socketTask.send({ data, success: () => console.log('socket send data: ', data) });
+    },
+
     start() {
       // weapp
       //const countDown = this.selectComponent('.control-count-down');
@@ -205,14 +155,19 @@ Component({
       //const countDown = this.selectComponent('.control-count-down');
       this.$refs.countDown.reset();
     },
-    
-    updateTime(){
+
+    updateTime() {
       this.setData({ time: 180000 });
+      this.triggerEvent('changeCar', { carid: '云A961JT' });
     },
 
     finished() {
       wx.showToast({ title: '竞价结束', icon: 'success', duration: 2000 });
       this.setData({ disableAdd: true, show: [0, 0] });
+    },
+
+    finished2() {
+      this.setData({ show: [1, 0] });
     },
 
     addPrice(e) {
@@ -230,7 +185,7 @@ Component({
               user: sid
             });
             //if (this.data.disableAdd) return 0;
-            socketTask.send({
+            this.socketTask.send({
               data,
               success: function() {
                 console.log('socket send data: ', data);
@@ -244,6 +199,74 @@ Component({
     }
   }
 });
+
+function socketConnect(page) {
+  const socketTask = wx.connectSocket({
+    url: 'wss://www.all2key.cn/yz',
+    header: { 'content-type': 'appliction/json', client: 'weapp', token: sid, apptoken: 'yz_auction' },
+    complete() {}
+  });
+
+  // register event handle for socketTask
+  socketTask.onOpen(res => {
+    console.log('socket open: ', res);
+    // sent auth info to server
+  });
+
+  socketTask.onMessage(res => {
+    console.log('recive message: ', res);
+
+    if (!res.data) return 0;
+    const data = JSON.parse(res.data);
+    const price = parseInt(data.price);
+    const time = parseInt(data.time);
+
+    if (!data.carid) {
+      // no auctioning
+      socketTask.close();
+      console.log('no auctioning! websocket closed!');
+    } else if (data.carid !== page.properties.carid) {
+      // user is browsing car
+      if (!page.lastCarid) {
+        wx.showModal({
+          title: '当前正在竞价',
+          content: '是否切换到竞价页面？',
+          success: res => {
+            if (res.confirm) {
+              page.triggerEvent('changeCar', { carid: data.carid });
+            } else if (res.cancel) {
+              console.log('用户点击取消');
+              page.time3 < 0 && page.setData({ show: [0, 1], time3: time });
+            }
+          }
+        });
+      } else {
+        // next car auction
+        page.triggerEvent('changeCar', { carid: data.carid });
+      }
+    } else {
+      page.setData({
+        show: [1, 0],
+        price,
+        time,
+        state: data.state,
+        lastCarid: data.carid,
+        disableAdd: data.time < 0
+      });
+      // change price of parent component
+      page.triggerEvent('changePrice', { price, reachReserve: data.price >= data.reserve });
+      page.$refs.countDown && page.$refs.countDown.reset();
+      //page.$refs.countDown.start();
+    }
+  });
+
+  socketTask.onClose(e => {
+    console.log('socket close: ', e);
+  });
+
+  return socketTask;
+}
+
 export default global['__wxComponents']['components/auction/auction'];
 </script>
 

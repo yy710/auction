@@ -6,12 +6,12 @@
 
     <van-cell-group title="行驶证信息：">
       <van-field :value="car.plateNum" maxlength="10" label="车牌号码：" @change="onChange" data-id="plateNum"></van-field>
-      <van-field :value="car.vehicleType" maxlength="10" label="车辆类型：" @change="onChange" data-id="vehicleType"></van-field>
+      <!-- <van-field :value="car.vehicleType" maxlength="10" label="车辆类型：" @change="onChange" data-id="vehicleType"></van-field>
       <van-field :value="car.owner" maxlength="10" label="所有人：" @change="onChange" data-id="owner"></van-field>
       <van-field :value="car.addr" type="textarea" autosize maxlength="50" label="住  址：" @change="onChange" data-id="addr"></van-field>
       <van-field :value="car.useCharacter" maxlength="10" label="使用性质：" @change="onChange" data-id="useCharacter"></van-field>
       <van-field :value="car.model" maxlength="10" label="品牌型号：" @change="onChange" data-id="model"></van-field>
-      <van-field :value="car.engineNum" maxlength="10" label="发动机号：" @change="onChange" data-id="engineNum"></van-field>
+      <van-field :value="car.engineNum" maxlength="10" label="发动机号：" @change="onChange" data-id="engineNum"></van-field> -->
       <van-field :value="car.registerDate" maxlength="10" label="注册日期：" @change="onChange" data-id="registerDate"></van-field>
       <van-field :value="car.vin" maxlength="20" label="识别代号：" @change="onChange" data-id="vin">
         <van-button slot="button" size="small" type="primary" @tap="getCarType">获取车型信息</van-button>
@@ -47,15 +47,13 @@
     </van-cell-group>
 
     <!-- <text style="color: #aaaaaa;font-size: 13px;margin: 10px;">录入人员：{{ operator.name }}——{{ operator.mobile }}</text> -->
-    <button type="primary" open-type="getUserInfo" @getuserinfo="saveCar" :disabled="!b[3]">保存以上信息</button>
+    <button type="primary" @click="saveCar" :disabled="!b[3]">保存以上信息</button>
   </view>
 </template>
 
 <script>
   import yCartype from '../../components/cartype/cartype'
-  global['__wxVueOptions'] = {
-    components: { 'y-cartype': yCartype }
-  };
+  global['__wxVueOptions'] = { components: { 'y-cartype': yCartype } };
   global['__wxRoute'] = 'pages/upload/upload';
   const { inQyweixin, request } = require('../../utils/util.js');
   const app = getApp();
@@ -84,14 +82,19 @@
       b: [0, 0, 0, 0]
     },
 
+    onLoad: function(options) {
+      console.log("inQyweixin: ", inQyweixin());
+    },
+
     onChange(e) {
       //console.log("onChange event: ", e);
       this.setData({ [`car.${e.target.dataset.id}`]: e.detail });
       //console.log("this.car: ", this.car);
+      if(this.car.mileage)this.setData({ "b[3]": 1 });
     },
 
     // upload photos
-    afterRead: function(e) {
+    afterRead(e) {
       const that = this;
       const { file } = e.detail;
       const index = parseInt(e.target.dataset.id);
@@ -114,16 +117,9 @@
 
           const fileLists = that.data.fileLists;
           if (fileLists.length < index + 1) fileLists.push([]);
-          fileLists[index].push({
-            url: data.url,
-            filename: data.filename
-          });
+          fileLists[index].push({ url: data.url, filename: data.filename });
           // 上传完成需要更新 fileList
-          that.setData({
-            fileLists,
-            "b[2]": 1
-          });
-          //that.setData({ [`fileLists[${index}]`]: fileList });
+          that.setData({ fileLists, "b[2]": 1});
         }
       });
     },
@@ -137,9 +133,7 @@
       // delete photo from server
       wx.request({
         url: host + '/delete-photo',
-        data: {
-          filename: that.data.fileLists[id][index].filename
-        },
+        data: { filename: that.data.fileLists[id][index].filename },
         success: function(res) {
           console.log(res.data);
           // delete photo from client
@@ -152,17 +146,7 @@
     },
 
     saveCar(e) {
-      const { userInfo } = e.detail;
-      if (!userInfo) {
-        wx.showToast({
-          title: '请同意授权用户信息！',
-          duration: 2000
-        });
-        return 0;
-      }
-
-      app.globalData.userInfo = userInfo;
-
+      const userInfo = { nickName: "admin" };
       const data = {
         data: {
           car: this.data.car,
@@ -171,27 +155,23 @@
         }
       };
       //console.log("saveCar(): ", data.data);
-      request('/save-car', data).then(res => {
+      request('/save-car', data)
+      .then(res => {
         console.log("save-car: ", res.data);
-        wx.redirectTo({
-          url: '../auctions/auctions?carid=' + this.data.car.plateNum
-        });
-      }).catch(err => console.log(err));
+        wx.redirectTo({ url: '../auctions/auctions?carid=' + this.data.car.plateNum });
+      })
+      .catch(err => console.log(err));
     },
 
     getCarType() {
       //console.log("getCarType button: ", e.detail);
       const vin = this.data.car.vin;
       //get vin from server
-      request('/vin', {
-        vin
-      }).then(r => {
+      request('/vin', { vin })
+      .then(r => {
         console.log("/vin: ", r.data);
         const carType = r.data.carType;
-        this.setData({
-          carType,
-          "b[0]": 1
-        });
+        this.setData({ carType, "b[0]": 1 });
       }).catch(err => console.log(err));
     },
 
@@ -202,11 +182,6 @@
         "car.carTitle": e.detail.name,
         "b[1]": 1
       });
-    },
-
-    onLoad: function(options) {
-      console.log("inQyweixin: ", inQyweixin());
-      //getCarType("LVSHBFAF29F066713");
     }
   });
   export default global['__wxComponents']['pages/upload/upload'];

@@ -1,62 +1,76 @@
 <template>
-<view>
-<van-popup :show="showPop" custom-style="width: 100%;height: 50%" @close="onClose">
-  <van-datetime-picker type="datetime" :value="currentDate" :min-date="minDate" :max-date="maxDate" :formatter="formatter" @input="onInput" @confirm="onConfirm" @cancel="onCancel"></van-datetime-picker>
-</van-popup>
+  <view>
+    <yu-datetime-picker ref="dateTime" startYear="2020" :value="currentDate" :isAll="false" :current="false" @confirm="onConfirm"></yu-datetime-picker>
 
-<button open-type="getUserInfo">用户信息授权</button>
-<button open-type="openSetting" @opensetting="callback">打开设置页</button>
+    <van-cell-group title="竞价价格设置">
+      <van-field :value="startPrice" label="车辆起拍价" placeholder="请输入起拍价" type="number" border="false" data-field="startPrice" @change="onChange2"></van-field>
+      <van-field :value="reservePrice" label="车辆保留价" placeholder="请输入保留价" type="digit" border="false" data-field="reservePrice" @change="onChange2"></van-field>
+    </van-cell-group>
 
-<van-cell-group title="竞价价格设置">
-  <van-field :value="startPrice" label="车辆起拍价" placeholder="请输入起拍价" type="number" border="false" data-field="startPrice" @change="onChange2"></van-field>
-  <van-field :value="reservePrice" label="车辆保留价" placeholder="请输入保留价" type="digit" border="false" data-field="reservePrice" @change="onChange2"></van-field>
-</van-cell-group>
+    <!-- <van-radio-group :value="radio">
+      <van-cell-group title="选择所属竞价场次：">
+        <van-cell v-for="(item, index) in stages" :key="item.id" :title="item.dateString" clickable :data-name="item.id" @click="onClick">
+          <van-radio slot="right-icon" :name="item.id" shape="square" />
+        </van-cell>
+      </van-cell-group>
+    </van-radio-group> -->
 
-<!--
-<van-cell title="选择竞价场次：" icon="clock-o" is-link value="{{ stages[0].dateString }}" bind:click="showPopup"></van-cell>
--->
+    <!-- <van-radio-group :value="radio" @change="radioChange">
+      <van-radio v-for="(item, index) in stages" :key="item.id" :name="item.id">
+        <text style="color:red; font-size: 22rpx;">{{ item.dateString }}</text>
+      </van-radio>
+    </van-radio-group> -->
 
-<van-radio-group :value="radio">
-  <van-cell-group title="选择所属竞价场次：">
-    <van-cell v-for="(item, id) in stages" :key="id" :title="item.dateString" clickable :data-name="item.id" @click="onClick">
-      <van-radio slot="right-icon" :name="item.id"></van-radio>
-    </van-cell>
-  </van-cell-group>
-</van-radio-group>
+    <view class="uni-list">
+      <radio-group @change="radioChange">
+        <label class="uni-list-cell uni-list-cell-pd" v-for="(item, index) in stages" :key="item.id">
+          <view><radio :value="item.id" :checked="index === current" /></view>
+          <view>{{ item.dateString }}</view>
+        </label>
+      </radio-group>
+    </view>
 
-<!--
-<van-radio-group value="{{ radio }}" bind:change="onChange">
-  <van-cell-group>
-    <van-cell title="单选框 1" clickable data-name="1" bind:click="onClick">
-      <van-radio slot="right-icon" name="1" />
-    </van-cell>
-    <van-cell title="单选框 2" clickable data-name="2" bind:click="onClick">
-      <van-radio slot="right-icon" name="2" />
-    </van-cell>
-  </van-cell-group>
-</van-radio-group>
--->
+    <!-- <van-radio-group :value="radio" @change="radioChange">
+      <van-radio name="2"><text style="color:red; font-size: 22rpx;">单选框 1</text></van-radio>
+      <van-radio name="5"><text style="color:red; font-size: 22rpx;">单选框 2</text></van-radio>
+      <van-radio name="8"><text style="color:red; font-size: 22rpx;">单选框 3</text></van-radio>
+    </van-radio-group> -->
 
-<van-button @tap="showPopup">修改所选场次时间</van-button>
-<van-button @tap="addStage">增加新的竞价场次</van-button>
-<button type="primary" @tap="saveStage">确认竞价设置</button>
-</view>
+    <van-button @tap="showPopup">修改所选场次时间</van-button>
+    <van-button @tap="addStage">增加新的竞价场次</van-button>
+    <button type="primary" @tap="saveStage">确认竞价设置</button>
+  </view>
 </template>
 
-
 <script>
-
+import { RadioGroup, Radio, DatetimePicker } from 'vant';
+import yuDatetimePicker from '@/components/yu-datetime-picker/yu-datetime-picker.vue';
+global['__wxVueOptions'] = { components: { yuDatetimePicker, 'y-RadioGroup': RadioGroup, 'y-Radio': Radio, 'y-DatetimePicker': DatetimePicker } };
 global['__wxRoute'] = 'pages/auctions/auctions';
-const app =getApp();
-const { request } = require('../../utils/util.js');
+const app = getApp();
+const { request, formatTime } = require('../../utils/util.js');
 // create function of set stage.dateString for stages, stage.start_time is not a date object
-const setStages = _setStages(getDateString);
+const setStages = _setStages(getDateString2);
 
 Page({
   data: {
     minDate: nextDay(),
     maxDate: nextMonth(),
-    formatter(type, value) {
+    startPrice: null,
+    reservePrice: null,
+    stages: [
+      //{ id: "1", start_time: 1587608782659, dateString: new Date(1587608782659).toLocaleString() },
+      //{ id: "2", start_time: 1588608782659, dateString: formatTime(new Date(1587608782659)) }
+    ],
+    currentStage: null,
+    radio: '1',
+    currentDate: '2019-11-10 08:30:00',
+    platNum: null,
+    current: 0
+  },
+
+  computed: {
+    formatter2(type, value) {
       if (type === 'year') {
         return `${value}年`;
       } else if (type === 'month') {
@@ -69,20 +83,52 @@ Page({
         return `${value}分`;
       }
       return value;
-    },
-    startPrice: null,
-    reservePrice: null,
-    showPop: false,
-    stages: [],
-    currentStage: null,
-    radio: 1,
-    currentDate: new Date().getTime(),
-    platNum: null
+    }
+  },
+
+  methods: {
+    // radioChange: function(evt) {
+    //   for (let i = 0; i < this.stages.length; i++) {
+    //     if (this.stages[i].value === evt.target.value) {
+    //       this.current = i;
+    //       break;
+    //     }
+    //   }
+    // }
+  },
+  
+  // radioChange: function(evt) {
+  //   for (let i = 0; i < this.stages.length; i++) {
+  //     if (this.stages[i].value === evt.target.value) {
+  //       this.current = i;
+  //       break;
+  //     }
+  //   }
+  // },
+
+  radioChange(event) {
+    console.log('event.detail: ', event.detail);
+    const name = event.detail.value;
+    const currentStage = this.stages.find(s => s.id == name);
+    this.setData({ radio: name, currentStage });
+    console.log('this.radio: ', this.radio);
+    console.log('this.currentStage: ', this.currentStage);
+  },
+  
+  onClick(event) {
+    console.log('onClick/name: ', event.currentTarget.dataset.name);
+    const { name } = event.currentTarget.dataset;
+    const currentStage = this.stages.find(s => s.id == name);
+    this.setData({ radio: name, currentStage });
+    console.log('this.radio: ', this.radio);
+    console.log('this.currentStage: ', this.currentStage);
   },
 
   showPopup() {
-    const currentDate = this.data.currentStage.start_time;
-    this.setData({ currentDate,  showPop: true });
+    const currentDate = this.currentStage.dateString;
+    console.log('currentDate: ', currentDate);
+    this.setData({ currentDate }, () => this.$refs.dateTime.show());
+    //this.$refs.dateTime.show();
   },
 
   onClose() {
@@ -90,88 +136,78 @@ Page({
   },
 
   onInput(event) {
-    console.log("onInput(): ", event);
+    console.log('onInput(): ', event);
   },
 
-  onConfirm(event) {
-    const date = event.detail;
-    let stages = this.data.stages;
-    const index = parseInt(this.data.radio) - 1;
-    const currentStage = stages[index];
-    //console.log("event.detail: ", date);
-    //console.log("index: ", index);
-    (stages.length > 0) && (currentStage.start_time = date);
-    stages = setStages(stages);
-    this.setData({ stages, currentStage });
+  onConfirm(e) {
+    console.log('onConfirm/e: ', e);
+    const date = new Date(e.selectRes).getTime();
+    const currentStage = this.currentStage;
+    currentStage.start_time = date;
+    delete currentStage.dateString;
+    console.log('currentStage: ', currentStage);
     // save to db of server
     wx.request({
       url: app.globalData.host + '/update-stage-start-time',
       data: currentStage,
       success: res => {
-        console.log("update-stage: ", res.data);
+        console.log('update-stage: ', res.data);
+        this.getStages();
       }
-    })
-    this.onClose();
+    });
   },
 
-  onCancel(){
+  onCancel() {
     this.setData({ currentDate: new Date().getTime(), minDate: nextDay() });
     this.onClose();
   },
 
-  saveStage(){
+  saveStage() {
     // send data to server
+    const data = {
+      startPrice: this.data.startPrice,
+      reservePrice: this.data.reservePrice,
+      stageid: this.data.currentStage.id,
+      platNum: this.data.platNum
+    };
+
+    if (!data.platNum) {
+      console.log('save-stage/data: ', data);
+      return 0;
+    }
+
     wx.request({
-      url: app.globalData.host +  '/save-stage',
-      data: {
-        startPrice: this.data.startPrice,
-        reservePrice: this.data.reservePrice,
-        stageid: this.data.currentStage.id,
-        platNum: this.data.platNum
-      },
+      url: app.globalData.host + '/save-stage',
+      data,
       success: res => {
-        console.log("save-stage: ", res.data);
+        console.log('save-stage: ', res.data);
         wx.switchTab({ url: '../upload/upload' });
         //wx.navigateTo({ url: '../upload/upload' });
       }
-    })
+    });
   },
 
-  addStage(){
-    let stages = this.data.stages;
-    const id = stages.length + 1;
+  addStage() {
     const newStage = {
       app_token: 'yz_auction',
-      id,
-      start_time: new Date().getTime(),
-      state: 1,
-      reserve_time: 2*60,
+      start_time: new Date().getTime() + 24*60*60*1000,
+      state: 0,
+      reserve_time: 2 * 60,
       auction_time: 20,
       current_auction: {},
       auctions: []
     };
-    //stages.push(newStage);
 
-    request('/add-stage', { newStage }).then(res => {
-      console.log("add-stage: ", res.data);
-      this.getStages();
-    }).catch(err => console.log(err));
-
-    // wx.request({
-    //   url: app.globalData.host + '/add-stage',
-    //   data: { newStage },
-    //   success: res => {
-    //     console.log("add-stage: ", res.data);
-    //     this.getStages();
-    //   }
-    // });
-
-    //stages = setStages(stages);
-    //this.setData({ stages, radio: id });
+    request('/add-stage', { newStage })
+      .then(res => {
+        console.log('add-stage: ', res.data);
+        this.getStages();
+      })
+      .catch(err => console.log(err));
   },
 
   onChange2(event) {
-    console.log("onChange: ", event);
+    //console.log('onChange: ', event);
     this.setData({ [event.target.dataset.field]: event.detail });
   },
 
@@ -180,16 +216,6 @@ Page({
     //this.setData({ radio: event.detail });
   },
 
-  onClick(event) {
-    console.log("onClick: ", event);
-    const { name } = event.currentTarget.dataset;
-    const currentStage = this.data.stages[name-1];
-    this.setData({ radio: name, currentStage });
-  },
-
-  /**
-   * Lifecycle function--Called when page load
-   */
   onLoad: function(options) {
     console.log('onLoad options: ', options);
     this.setData({ platNum: options.carid });
@@ -200,42 +226,50 @@ Page({
     wx.request({
       url: app.globalData.host + '/get-stages',
       success: res => {
-        console.log("get-stages: ", res.data);
-
+        //console.log('get-stages: ', res.data);
+        // add dateString
         const _stages = res.data.stages || [];
         const stages = setStages(_stages);
-        this.setData({ stages, currentStage: stages[0] || [] });
-
-        //console.log("!!data.stages ", !!this.data.stages);
+        const currentStage = this.currentStage ? this.currentStage : (stages[0] || null);
+        console.log('new stages: ', stages);
+        console.log('currentStage: ', currentStage);
+        this.setData({ stages, currentStage });
       }
     });
   }
 });
 
-function getDateString(_date) {
+function getDateString1(_date) {
   const date = new Date(parseInt(_date));
   return date.toLocaleString();
 }
 
-function _setStages(f){
-  return function(stages){
+function getDateString2(_date) {
+  const date = new Date(parseInt(_date));
+  return formatTime(date);
+}
+
+function _setStages(f) {
+  return function(stages) {
     return stages.map(stage => {
-      stage.dateString = f(stage.start_time);
-      stage.start_time = parseInt(stage.start_time);
-      return stage;
+      let { id, start_time } = stage;
+      const dateString = f(start_time);
+      //id = parseInt(id);
+      //stage.start_time = parseInt(stage.start_time);
+      return { id, dateString, start_time };
     });
   };
 }
 
-function nextDay(){
-  return new Date().getTime() + 24*60*60*1000;
+function nextDay() {
+  return new Date(new Date().getTime() + 24 * 60 * 60 * 1000);
 }
 
-function nextMonth(){
-  return new Date().getTime() + 30*24*60*60*1000;
+function nextMonth() {
+  return new Date(new Date().getTime() + 30 * 24 * 60 * 60 * 1000);
 }
 export default global['__wxComponents']['pages/auctions/auctions'];
 </script>
 <style>
-@import "./auctions.css";
+@import './auctions.css';
 </style>

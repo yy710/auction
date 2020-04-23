@@ -61,7 +61,7 @@ class Task {
     //   winnerid 最终胜者id
     //   logs 竞价过程记录
     // }
-    this.currentAuction = null;
+    global.currentAuction = null;
     this.job = this.createJob();
     //this.initWss();
     //this.initCountDown();
@@ -76,11 +76,11 @@ class Task {
     this.countDown.on('timeout', (time) => {
       global.debug && console.log('timeout: ', time);
       // set auction end flag
-      this.currentAuction.state = 2;
+      global.currentAuction.state = 2;
       // save this.currentAuction to db
       global.db
         .collection('logs')
-        .find({ action: 'addPrice', 'data.carid': this.currentAuction.car.plateNum })
+        .find({ action: 'addPrice', 'data.carid': global.currentAuction.car.plateNum })
         .toArray()
         .then((logs) => {
           let buyer = {};
@@ -90,10 +90,10 @@ class Task {
             delete buyer._id;
           }
 
-          this.currentAuction.state = isSold(this.currentAuction) ? 2 : 3;
+          global.currentAuction.state = isSold(global.currentAuction) ? 2 : 3;
           return global.db
             .collection('auctions')
-            .insertOne({ ...this.currentAuction, buyer, logs, endTime: new Date().getTime() });
+            .insertOne({ ...global.currentAuction, buyer, logs, endTime: new Date().getTime() });
         })
         .then(() => this.nextAuction())
         .catch((err) => console.log(err));
@@ -159,6 +159,8 @@ class Task {
             //this.logger.save('receiveMsg', msg);
             if (msg.action === 'addPrice') {
               this.addPrice(msg);
+            }else if(msg.action === 'hello'){
+              this.sayHellow(socket);
             }
           } catch (error) {
             console.log(error);
@@ -183,7 +185,7 @@ class Task {
   }
 
   sayHellow(socket) {
-    if (!this.currentAuction) {
+    if (!global.currentAuction) {
       socket.close();
     } else {
       const data = this.getCurrent();
@@ -192,30 +194,29 @@ class Task {
     }
     return this;
   }
-
+ 
   nextAuction() {
     // [debug]
     console.log(
       'last auction carid: ',
-      this.currentAuction && this.currentAuction.car && this.currentAuction.car.plateNum
+      global.currentAuction && global.currentAuction.car && global.currentAuction.car.plateNum
     );
 
-    this.currentAuction = this.data.auctions.shift();
-    if (!this.currentAuction) {
+    global.currentAuction = this.data.auctions.shift();
+    if (!global.currentAuction) {
       // [debug]
       console.log('task ', this.data.id, 'completed!');
-      this.updateState(3);
+      this.updateState(3); 
       this.closeAllSocket();
       //this.wss.removeAllListeners('connection');
     } else {
       // [debug]
-      console.log('next auction carid: ', this.currentAuction.car.plateNum);
+      console.log('next auction carid: ', global.currentAuction.car.plateNum);
 
-      this.currentAuction.state = 1; // 1: go
-      this.currentAuction.startPrice = this.currentAuction.price;
-      this.currentAuction.startTime = new Date().getTime();
-      global.currentAuction = this.currentAuction;
-      this.countDown.reset(2 * 60);
+      global.currentAuction.state = 1; // 1: go
+      global.currentAuction.startPrice = global.currentAuction.price;
+      global.currentAuction.startTime = new Date().getTime();
+      this.countDown.reset(20 * 60);
     }
     this.broadcast();
     return this;
@@ -232,9 +233,9 @@ class Task {
 
   getCurrent() {
     try {
-      if (!this.currentAuction) return {};
-      const { state, price, reserve } = this.currentAuction;
-      const carid = this.currentAuction.car.plateNum;
+      if (!global.currentAuction) return {};
+      const { state, price, reserve } = global.currentAuction;
+      const carid = global.currentAuction.car.plateNum;
       return { state, price, reserve, carid, time: this.countDown.get() };
     } catch (error) {
       console.log('getCurrent(): ', error);
@@ -243,9 +244,9 @@ class Task {
 
   async addPrice(msg) {
     console.log('addPrice() msg: ', msg);
-    if (!this.currentAuction) return this;
+    if (!global.currentAuction) return this;
 
-    if (msg.carid !== this.currentAuction.car.plateNum) {
+    if (msg.carid !== global.currentAuction.car.plateNum) {
       console.log('addPrice: carid error!');
       return this;
     }
@@ -256,9 +257,9 @@ class Task {
       return this;
     }
 
-    if (typeof this.currentAuction.price == 'string') this.currentAuction.price = parseInt(this.currentAuction.price);
-    this.currentAuction.price += parseInt(msg.addNum);
-    if (this.currentAuction.price >= this.currentAuction.reserve) {
+    if (typeof global.currentAuction.price == 'string') global.currentAuction.price = parseInt(global.currentAuction.price);
+    global.currentAuction.price += parseInt(msg.addNum);
+    if (global.currentAuction.price >= global.currentAuction.reserve) {
       // start 20s 计时器
       this.countDown.reset(20);
     }

@@ -2,7 +2,7 @@
 <view class="container">
 	<view class="search-list-container">
 		<scroll-view scroll-y="true" style="height: 80%;width:100%">
-			<view style="border-top: 1px solid #d1d3d4;" v-for="(item, id) in cars" :key="id" @click="goToDetail" :id="item.id">
+			<view style="border-top: 1px solid #d1d3d4;" v-for="(item, id) in cars" :key="id" @click="goToDetail" :data-id="item.id" :data-tagid="item.tag.id">
 				<view class="search-item-container">
 					<view class="search-item-image" style="flex:3;">
 						<image mode="aspectFill" :src="item.imageURL" style="width: 150px;height:95px"></image>
@@ -27,7 +27,6 @@
 
 
 <script>
-
 global['__wxRoute'] = 'pages/sale/sales';
 const { request } = require('../../utils/util.js');
 const app = getApp();
@@ -46,30 +45,13 @@ Page({
   },
   
   goToDetail: function (e) {
-    console.log(e);
-    const { userInfo } = e.detail;
-    const carid = e.currentTarget.id
-    const url = '../detail/detail?carid=' + carid;
-    // if getUserInfo error
-    if(!userInfo){
-      wx.showToast({
-        title: '请同意授权用户信息！',
-        duration: 2000
-      });
-      wx.reLaunch({ url });
-      return 0;
-    }
-
-    app.globalData.userInfo = userInfo;
-
-    // update userinfo to db of server
-    request('/update-userinfo', { userInfo }).then(res => {
-      var carid = e.currentTarget.id
-      const url = '../detail/detail?carid=' + carid;
-      //wx.navigateTo({ url });
-      //wx.switchTab({ url });
-      wx.reLaunch({ url });
-    }).catch(err => console.log(err));
+    app.globalData.carid = e.currentTarget.dataset.id;
+    const url = '../detail/detail?carid=' + e.currentTarget.dataset.id ;
+    const tagid = e.currentTarget.dataset.tagid;
+    //wx.navigateTo({ url });
+    //wx.switchTab({ url });
+    if(tagid == 2 )return 0;
+    wx.reLaunch({ url });
   }
 });
 

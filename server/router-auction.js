@@ -87,24 +87,38 @@ module.exports = function (express) {
   });
 
   router.get('/get-stage', async function (req, res, next) {
-    const carid = req.query.carid;
-    // find stage from carid
-    const stage = await global.db.collection('stages').findOne({ 'auctions.car.plateNum': carid });
-    const auction = stage.auctions.find((item) => item.car.plateNum == carid);
-    const { registerDate, carTitle, mileage, carType, images, carDescrible } = auction.car;
-    delete carType.carlist;
-    const content = {
-      stageStartTime: stage.start_time,
-      stageState: stage.state,
-      stageId: stage.id,
-      startPrice: auction.price / 10000,
-      reservePrice: auction.reserve,
-      auctionState: auction.state,
-      carInfo: { registerDate, carTitle, mileage, carDescrible },
-      carType,
-      imageURLs: images.map((item) => `https://www.all2key.cn/yz/auction/images/${item.filename}`)
-    };
-    res.json({ code: 0, msg: 'ok', content });
+    const carid = req.query.carid || (global.currentAuction && global.currentAuction.car.plateNum) || null;
+    global.debug && console.log("get-stage/carid: ", carid);
+
+    if (!carid) {
+      return res.json({ code: 0, msg: '当前没有正在竞价车辆！', content: '' });
+    }
+
+    try {
+      // find stage from carid
+      const stage = await global.db.collection('stages').findOne({ 'auctions.car.plateNum': carid });
+      const auction = stage.auctions.find((item) => item.car.plateNum == carid);
+      const { registerDate, carTitle, mileage, carType, images, carDescrible, plateNum } = auction.car;
+      delete carType.carlist;
+      const msg = {
+        code: 1,
+        msg: 'success',
+        content: {
+          stageStartTime: stage.start_time,
+          stageState: stage.state,
+          stageId: stage.id,
+          startPrice: auction.price / 10000,
+          reservePrice: auction.reserve,
+          auctionState: auction.state,
+          carInfo: { plateNum, registerDate, carTitle, mileage, carDescrible },
+          carType,
+          imageURLs: images.map((item) => `https://www.all2key.cn/yz/auction/images/${item.filename}`)
+        }
+      };
+      res.json(msg);
+    } catch (error) {
+      console.log(error);
+    }
   });
 
   router.get('/get-car', async function (req, res, next) {
@@ -197,7 +211,7 @@ module.exports = function (express) {
   router.get('/get-stages', function (req, res, next) {
     const col = global.db.collection('stages');
     col
-      .find({})
+      .find({ state: {$in: [0, 1]} })
       .toArray()
       .then((stages) => {
         //console.log("get-stages: ", stages);
@@ -273,12 +287,10 @@ module.exports = function (express) {
       })
       .catch((err) => console.log(err));
   });
-
+  
   router.get('/update-stage-start-time', function (req, res, next) {
     console.log('req.query: ', req.query);
-
-    let { id, start_time } = req.query;
-    id = parseInt(id);
+    const { id, start_time } = req.query;
     global.db
       .collection('stages')
       .updateOne({ id }, { $set: { start_time } })
@@ -298,7 +310,7 @@ module.exports = function (express) {
     console.log('save-stage/auction: ', auction);
     global.db
       .collection('stages')
-      .updateOne({ id: parseInt(stageid) }, { $push: { auctions: auction } })
+      .updateOne({ id: stageid }, { $push: { auctions: auction } })
       .then((r) => {
         res.json({ msg: 'ok' });
       })
@@ -308,7 +320,8 @@ module.exports = function (express) {
   router.get('/add-stage', function (req, res, next) {
     const newStage = JSON.parse(req.query.newStage);
     if (req.data.apptoken) newStage.apptoken = req.data.apptoken;
-    stages.push(newStage);
+    newStage.id = randomString();
+    //newStage.create_time = new Date().getTime();
     // save to db
     const col = global.db.collection('stages');
     col

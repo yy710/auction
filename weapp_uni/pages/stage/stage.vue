@@ -1,7 +1,8 @@
 <template>
   <view>
-    <view v-for="(item, plateNum) in auctions" @tap="toHistory" :data-id="item.plateNum">
-      <van-card :thumb="item.thumb">
+    <van-divider contentPosition="center">单击可查看竞价历史</van-divider>
+    <view v-for="(item, plateNum) in auctions" :key="plateNum" @tap="toHistory" :data-id="item.plateNum">
+      <van-card :thumb="item.thumb" :tag="item.tag">
         <text slot="num">保留价：{{ item.reservePrice }}</text>
         <view slot="desc">
           <van-row>
