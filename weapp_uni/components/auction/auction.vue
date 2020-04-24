@@ -1,18 +1,16 @@
 <template>
   <view>
-    <y-countdown ref="countDown" v-if="show[0]" :time="time" :auto-start="true" @finish="finished">
-      <template v-slot="timeData">
-        <view style="padding-left:10px">
-          <text>距离竞价结束还剩余</text>
-          <text class="item">{{ timeData.hours }}</text>
-          <text>时</text>
-          <text class="item">{{ timeData.minutes }}</text>
-          <text>分</text>
-          <text class="item">{{ timeData.seconds }}</text>
-          <text>秒</text>
-        </view>
-      </template>
-    </y-countdown>
+    <van-count-down use-slot ref="countDown" v-if="show[0]" :time="time" :auto-start="true" @finish="finished" @change="onTimeChange">
+      <view style="padding-left:10px">
+        <text>距离竞价结束还剩余</text>
+        <text class="item">{{ timeData.hours }}</text>
+        <text>时</text>
+        <text class="item">{{ timeData.minutes }}</text>
+        <text>分</text>
+        <text class="item">{{ timeData.seconds }}</text>
+        <text>秒</text>
+      </view>
+    </van-count-down>
 
     <!-- <van-grid clickable>
       <van-grid-item text="开始" icon="play-circle-o" @click="start" />
@@ -21,21 +19,19 @@
       <van-grid-item text="更新" icon="update" @click="updateTime" />
     </van-grid> -->
 
-    <y-countdown ref="countDown2" v-if="show[1]" :time="time3" :auto-start="true" @finish="finished2">
-      <template v-slot="timeData">
-        <view style="padding-left:10px">
-          <text>距离竞价开始还剩余</text>
-          <text class="item2">{{ timeData.days }}</text>
-          <text>天</text>
-          <text class="item2">{{ timeData.hours }}</text>
-          <text>时</text>
-          <text class="item2">{{ timeData.minutes }}</text>
-          <text>分</text>
-          <text class="item2">{{ timeData.seconds }}</text>
-          <text>秒</text>
-        </view>
-      </template>
-    </y-countdown>
+    <van-count-down use-slot @change="onTimeChange" ref="countDown2" v-if="show[1]" :time="time3" :auto-start="true" @finish="finished2">
+      <view style="padding-left:10px">
+        <text>距离竞价开始还剩余</text>
+        <text class="item2">{{ timeData.days }}</text>
+        <text>天</text>
+        <text class="item2">{{ timeData.hours }}</text>
+        <text>时</text>
+        <text class="item2">{{ timeData.minutes }}</text>
+        <text>分</text>
+        <text class="item2">{{ timeData.seconds }}</text>
+        <text>秒</text>
+      </view>
+    </van-count-down>
 
     <y-getphone></y-getphone>
 
@@ -67,8 +63,13 @@
 
 <script>
 import yGetphone from '../get-phone/index';
-import { CountDown } from 'vant';
-global['__wxVueOptions'] = { components: { 'y-getphone': yGetphone, 'y-countdown': CountDown } };
+//import { CountDown } from 'vant';
+global['__wxVueOptions'] = {
+  components: {
+    'y-getphone': yGetphone
+    //'y-countdown': CountDown
+  }
+};
 global['__wxRoute'] = 'components/auction/auction';
 const app = getApp();
 const sid = wx.getStorageSync('sid');
@@ -78,7 +79,7 @@ Component({
     carid: {
       type: String,
       value: null,
-      observer(newValue, oldValue){
+      observer(newValue, oldValue) {
         console.log('component/auction/carid/newValue: %s, oldValue: %s', newValue, oldValue);
         this.sayHello();
       }
@@ -102,12 +103,12 @@ Component({
   },
 
   data: {
-    timeDate: { days: 0, hours: 0, minutes: 0, seconds: 0 },
+    timeData: { days: 0, hours: 0, minutes: 0, seconds: 0 },
     show: [0, 0],
     price: 0,
     socketMsg: '',
-    time: 2*60*1000,
-    time3: 20*60*1000,
+    time: 2 * 60 * 1000,
+    time3: 20 * 60 * 1000,
     state: 'ready', // ready | go | stop
     lastCarid: null, // store carid from webSocket for next action
     disableAdd: false
@@ -119,11 +120,11 @@ Component({
       this.socketTask = socketConnect(this);
     },
 
-    attached(){
+    attached() {
       console.log('components/auction attached!');
     },
-    
-    detached(){
+
+    detached() {
       console.log('components/auction detached!');
       this.socketTask.close();
     }
@@ -133,28 +134,35 @@ Component({
     test() {
       console.log('refs test!');
     },
-    
+
+    onTimeChange(e) {
+      this.setData({ timeData: e.detail });
+    },
+
     sayHello() {
       //console.log('auction.sayHello()');
       const data = JSON.stringify({ action: 'hello' });
       this.socketTask.send({ data, success: () => console.log('socket send data: ', data) });
     },
 
+    // countDown methods -------------------------------------------------------
     start() {
       // weapp
       //const countDown = this.selectComponent('.control-count-down');
+
+      // vue
+      //console.log('this.$refs: ', this.$refs);
       this.$refs.countDown.start();
     },
 
     pause() {
-      //const countDown = this.selectComponent('.control-count-down');
       this.$refs.countDown.pause();
     },
 
     reset() {
-      //const countDown = this.selectComponent('.control-count-down');
       this.$refs.countDown.reset();
     },
+    //----------------------------------------------------------------------------
 
     updateTime() {
       this.setData({ time: 180000 });

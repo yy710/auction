@@ -33,7 +33,14 @@ import yAuction from '../../components/auction/auction';
 import yCartype from '../../components/cartype/cartype';
 import yCarinfo from '../../components/carinfo/carinfo';
 import ySwiper from '../../components/yswiper/yswiper';
-global['__wxVueOptions'] = { components: { 'y-auction': yAuction, 'y-cartype': yCartype, 'y-carinfo': yCarinfo, 'y-swiper': ySwiper } };
+global['__wxVueOptions'] = {
+  components: {
+    'y-auction': yAuction,
+    'y-cartype': yCartype,
+    'y-carinfo': yCarinfo,
+    'y-swiper': ySwiper
+  }
+};
 global['__wxRoute'] = 'pages/detail/detail';
 const app = getApp();
 const { request } = require('../../utils/util.js');
@@ -59,7 +66,7 @@ Page({
     this.loadPage(e.detail.carid);
   },
 
-  // page lifetimes start -----------------------------------------------------------------------------------
+  // // page lifetimes start -----------------------------------------------------------------------------------
   onLoad(options) {
     console.log('page/detail/onLoad()/options: ', options);
     this.loadPage();
