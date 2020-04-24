@@ -20,6 +20,8 @@
         <text style="color:red; font-size: 22rpx;">{{ item.dateString }}</text>
       </van-radio>
     </van-radio-group> -->
+    
+    <van-divider contentPosition="left">竞价场次时间设置</van-divider>
 
     <view class="uni-list">
       <radio-group @change="radioChange">
@@ -86,26 +88,6 @@ Page({
     }
   },
 
-  methods: {
-    // radioChange: function(evt) {
-    //   for (let i = 0; i < this.stages.length; i++) {
-    //     if (this.stages[i].value === evt.target.value) {
-    //       this.current = i;
-    //       break;
-    //     }
-    //   }
-    // }
-  },
-  
-  // radioChange: function(evt) {
-  //   for (let i = 0; i < this.stages.length; i++) {
-  //     if (this.stages[i].value === evt.target.value) {
-  //       this.current = i;
-  //       break;
-  //     }
-  //   }
-  // },
-
   radioChange(event) {
     console.log('event.detail: ', event.detail);
     const name = event.detail.value;
@@ -128,7 +110,6 @@ Page({
     const currentDate = this.currentStage.dateString;
     console.log('currentDate: ', currentDate);
     this.setData({ currentDate }, () => this.$refs.dateTime.show());
-    //this.$refs.dateTime.show();
   },
 
   onClose() {
@@ -141,7 +122,7 @@ Page({
 
   onConfirm(e) {
     console.log('onConfirm/e: ', e);
-    const date = new Date(e.selectRes).getTime();
+    const date = new Date(e.selectRes.replace(/\-/g, '/')).getTime();
     const currentStage = this.currentStage;
     currentStage.start_time = date;
     delete currentStage.dateString;
