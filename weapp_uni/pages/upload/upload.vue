@@ -2,8 +2,6 @@
   <view>
     <view style="background-color: #777777;line-height: 2;text-align: center;"><text style="color: #FFFFFF;font-size: 16px;flex: 1;">录入二手车信息</text></view>
 
-    <!-- <yu-datetime-picker ref="dateTime" startYear="2018" :isAll="true" :current="true" @confirm="onConfirmDateTime"></yu-datetime-picker> -->
-
     <van-cell-group title="行驶证信息：">
       <van-field :value="car.plateNum" maxlength="10" label="车牌号码：" @change="onChange" data-id="plateNum"></van-field>
       <!-- <van-field :value="car.vehicleType" maxlength="10" label="车辆类型：" @change="onChange" data-id="vehicleType"></van-field>
@@ -74,8 +72,7 @@
 
 <script>
 import yCartype from '../../components/cartype/cartype';
-import yuDatetimePicker from '@/components/yu-datetime-picker/yu-datetime-picker.vue';
-global['__wxVueOptions'] = { components: { 'y-cartype': yCartype, yuDatetimePicker } };
+global['__wxVueOptions'] = { components: { 'y-cartype': yCartype } };
 global['__wxRoute'] = 'pages/upload/upload';
 const { inQyweixin, request } = require('../../utils/util.js');
 const app = getApp();
@@ -176,6 +173,7 @@ Page({
   },
 
   saveCar(e) {
+    const that = this;
     const userInfo = { nickName: 'admin' };
     const data = {
       data: {
@@ -188,7 +186,9 @@ Page({
     request('/save-car', data)
       .then(res => {
         console.log('save-car: ', res.data);
-        wx.redirectTo({ url: '../auctions/auctions?carid=' + this.data.car.plateNum });
+        const url = '../auctions/auctions?carid=' + this.data.car.plateNum;
+        uni.reLaunch({ url });
+        //wx.redirectTo({ url });
       })
       .catch(err => console.log(err));
   },

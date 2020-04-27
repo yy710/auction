@@ -62,14 +62,12 @@
 </template>
 
 <script>
+import socket from 'plus-websocket'
+// #ifdef APP-PLUS
+Object.assign(uni, socket)
+// #endif
 import yGetphone from '../get-phone/index';
-//import { CountDown } from 'vant';
-global['__wxVueOptions'] = {
-  components: {
-    'y-getphone': yGetphone
-    //'y-countdown': CountDown
-  }
-};
+global['__wxVueOptions'] = { components: { 'y-getphone': yGetphone } };
 global['__wxRoute'] = 'components/auction/auction';
 const app = getApp();
 const sid = wx.getStorageSync('sid');
@@ -115,13 +113,15 @@ Component({
   },
 
   lifetimes: {
-    created: function() {
+    created() {
       console.log('components auction created!');
-      this.socketTask = socketConnect(this);
+      //this.socketTask = socketConnect(this);
     },
 
     attached() {
       console.log('components/auction attached!');
+      socketConnect(this);
+      //this.sayHello();
     },
 
     detached() {
@@ -131,10 +131,16 @@ Component({
   },
 
   methods: {
-    test() {
-      console.log('refs test!');
-    },
+    // test() {
+    //   console.log('refs test!');
+    // },
+    
+    // reconnectSocket(){
+    //   console.log('socketTask reconnected!');
+    //   socketConnect(this);
+    // },
 
+    // for render countDown
     onTimeChange(e) {
       this.setData({ timeData: e.detail });
     },
@@ -164,6 +170,7 @@ Component({
     },
     //----------------------------------------------------------------------------
 
+    // test changeCar event
     updateTime() {
       this.setData({ time: 180000 });
       this.triggerEvent('changeCar', { carid: '云A961JT' });
@@ -179,6 +186,7 @@ Component({
     },
 
     addPrice(e) {
+      const that = this;
       console.log('addPrice: ', e);
       wx.showModal({
         title: '提示',
@@ -187,13 +195,13 @@ Component({
           if (res.confirm) {
             const data = JSON.stringify({
               action: 'addPrice',
-              carid: this.data.carid,
-              price: this.data.price,
+              carid: that.carid,
+              price: that.price,
               addNum: e.target.dataset.num,
               user: sid
             });
-            //if (this.data.disableAdd) return 0;
-            this.socketTask.send({
+            //if (that.disableAdd) return 0;
+            that.socketTask.send({
               data,
               success: function() {
                 console.log('socket send data: ', data);
@@ -209,7 +217,7 @@ Component({
 });
 
 function socketConnect(page) {
-  const socketTask = wx.connectSocket({
+  const socketTask = uni.connectSocket({
     url: 'wss://www.all2key.cn/yz',
     header: { 'content-type': 'appliction/json', client: 'weapp', token: sid, apptoken: 'yz_auction' },
     complete() {}
@@ -272,6 +280,7 @@ function socketConnect(page) {
     console.log('socket close: ', e);
   });
 
+  page.socketTask = socketTask;
   return socketTask;
 }
 

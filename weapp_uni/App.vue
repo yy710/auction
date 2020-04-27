@@ -1,9 +1,14 @@
 <script>
-const { request, login } = require('./utils/util.js');
-
+const { request, login } = require('@/utils/util.js');
+// #ifdef APP-PLUS
+import APPUpdate, { getCurrentNo } from '@/utils/APPUpdate/APPUpdate.js';
+// #endif
 export default {
   onLaunch: function() {
     login(this);
+    // #ifdef APP-PLUS
+    APPUpdate();
+    // #endif
   },
 
   globalData: {
@@ -24,5 +29,4 @@ export default {
 /* uni.css - 通用组件、模板样式库，可以当作一套ui库应用 */
 @import './common/uni.css';
 /* #endif*/
-
 </style>

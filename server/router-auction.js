@@ -436,6 +436,37 @@ module.exports = function (express) {
     const user = await global.db.collection('users').findOne({ openid });
     res.json({ errcode: 0, msg: 'ok', content: user && user.mobile });
   });
+   
+  // app version auto update
+  router.get('/app_version', function(req, res, next){
+    //console.log('app_version/req.query: ', req.query);
+    const { version, type } = req.query;
+    /* res的数据说明
+		 * | 参数名称	     | 一定返回 	| 类型	    | 描述
+		 * | -------------|--------- | --------- | ------------- |
+		 * | versionCode	 | y	    | int	    | 版本号        |
+		 * | versionName	 | y	    | String	| 版本名称      |
+		 * | versionInfo	 | y	    | String	| 版本信息      |
+		 * | forceUpdate	 | y	    | boolean	| 是否强制更新  |
+		 * | downloadUrl	 | y	    | String	| 版本下载链接  |
+     */
+    let content = null;
+
+    if( version == '001' ){
+      // content = {
+      //   success: true,
+      //   versionCode: 2,
+      //   versionName: "0.0.2",
+      //   versionInfo: "内测版",
+      //   forceUpdate: false,
+      //   downloadUrl: "https://www.all2key.cn/yzauction-qrcode/yzauction_002.wgt"
+      // };
+    }else if( version == '002' ){
+      //
+    }
+     
+    res.json(content); 
+  }); 
 
   return router;
 };

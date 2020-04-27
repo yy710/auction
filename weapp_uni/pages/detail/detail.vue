@@ -76,16 +76,19 @@ Page({
     console.log('page/detail/onReady()/app.globalData.carid = ', app.globalData.carid);
     //this.loadPage();
     //console.log('$refs.auction: ', this.$refs.auction);
-    //this.$refs.auction.sayHello();
+    //this.$refs.auction.reconnectSocket();
+    //console.log("this.refs.auction.socketTask: ", this.$refs.auction.socketTask)
   },
 
   onHide() {
     console.log('page/detail/onHide()');
-    //this.$refs.auction.socketClose();
+    //console.log("this.refs.auction.socketTask: ", this.$refs.auction.socketTask)
+    //this.$refs.auction.socketTask.close();
   },
 
   onShow() {
     console.log('pages/detail/onShow()');
+    //console.log("this.refs.auction.socketTask: ", this.$refs.auction.socketTask)
     //this.$refs.auction.sayHello();
   },
 

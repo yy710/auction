@@ -1,7 +1,5 @@
 <template>
   <view>
-    <yu-datetime-picker ref="dateTime" startYear="2020" :value="currentDate" :isAll="false" :current="false" @confirm="onConfirm"></yu-datetime-picker>
-
     <van-cell-group title="竞价价格设置">
       <van-field :value="startPrice" label="车辆起拍价" placeholder="请输入起拍价" type="number" border="false" data-field="startPrice" @change="onChange2"></van-field>
       <van-field :value="reservePrice" label="车辆保留价" placeholder="请输入保留价" type="digit" border="false" data-field="reservePrice" @change="onChange2"></van-field>
@@ -20,7 +18,7 @@
         <text style="color:red; font-size: 22rpx;">{{ item.dateString }}</text>
       </van-radio>
     </van-radio-group> -->
-    
+
     <van-divider contentPosition="left">竞价场次时间设置</van-divider>
 
     <view class="uni-list">
@@ -31,6 +29,8 @@
         </label>
       </radio-group>
     </view>
+
+    <w-time-picker ref="picker" @confirm="onConfirm" @cancel="onCancel" />
 
     <!-- <van-radio-group :value="radio" @change="radioChange">
       <van-radio name="2"><text style="color:red; font-size: 22rpx;">单选框 1</text></van-radio>
@@ -45,9 +45,8 @@
 </template>
 
 <script>
-import { RadioGroup, Radio, DatetimePicker } from 'vant';
-import yuDatetimePicker from '@/components/yu-datetime-picker/yu-datetime-picker.vue';
-global['__wxVueOptions'] = { components: { yuDatetimePicker, 'y-RadioGroup': RadioGroup, 'y-Radio': Radio, 'y-DatetimePicker': DatetimePicker } };
+import wTimePicker from '@/components/w-time-picker/w-time-picker.vue';
+global['__wxVueOptions'] = { components: { wTimePicker } };
 global['__wxRoute'] = 'pages/auctions/auctions';
 const app = getApp();
 const { request, formatTime } = require('../../utils/util.js');
@@ -56,8 +55,6 @@ const setStages = _setStages(getDateString2);
 
 Page({
   data: {
-    minDate: nextDay(),
-    maxDate: nextMonth(),
     startPrice: null,
     reservePrice: null,
     stages: [
@@ -66,26 +63,11 @@ Page({
     ],
     currentStage: null,
     radio: '1',
-    currentDate: '2019-11-10 08:30:00',
+    currentDate: '2020-10-10 08:30',
+    startDate: formatTime(new Date()),
+    endDate: '2020-12-31 00:00',
     platNum: null,
     current: 0
-  },
-
-  computed: {
-    formatter2(type, value) {
-      if (type === 'year') {
-        return `${value}年`;
-      } else if (type === 'month') {
-        return `${value}月`;
-      } else if (type === 'day') {
-        return `${value}日`;
-      } else if (type === 'hour') {
-        return `${value}时`;
-      } else if (type === 'minute') {
-        return `${value}分`;
-      }
-      return value;
-    }
   },
 
   radioChange(event) {
@@ -96,7 +78,7 @@ Page({
     console.log('this.radio: ', this.radio);
     console.log('this.currentStage: ', this.currentStage);
   },
-  
+
   onClick(event) {
     console.log('onClick/name: ', event.currentTarget.dataset.name);
     const { name } = event.currentTarget.dataset;
@@ -109,7 +91,8 @@ Page({
   showPopup() {
     const currentDate = this.currentStage.dateString;
     console.log('currentDate: ', currentDate);
-    this.setData({ currentDate }, () => this.$refs.dateTime.show());
+    this.setData({ currentDate });
+    this.$refs.picker.show();
   },
 
   onClose() {
@@ -122,7 +105,8 @@ Page({
 
   onConfirm(e) {
     console.log('onConfirm/e: ', e);
-    const date = new Date(e.selectRes.replace(/\-/g, '/')).getTime();
+    //return 0;
+    const date = new Date(e.replace(/\-/g, '/')).getTime();
     const currentStage = this.currentStage;
     currentStage.start_time = date;
     delete currentStage.dateString;
@@ -139,6 +123,7 @@ Page({
   },
 
   onCancel() {
+    return 0;
     this.setData({ currentDate: new Date().getTime(), minDate: nextDay() });
     this.onClose();
   },
@@ -171,7 +156,7 @@ Page({
   addStage() {
     const newStage = {
       app_token: 'yz_auction',
-      start_time: new Date().getTime() + 24*60*60*1000,
+      start_time: new Date().getTime() + 24 * 60 * 60 * 1000,
       state: 0,
       reserve_time: 2 * 60,
       auction_time: 20,
@@ -197,7 +182,7 @@ Page({
     //this.setData({ radio: event.detail });
   },
 
-  onLoad: function(options) {
+  onLoad(options) {
     console.log('onLoad options: ', options);
     this.setData({ platNum: options.carid });
     this.getStages();
@@ -211,7 +196,7 @@ Page({
         // add dateString
         const _stages = res.data.stages || [];
         const stages = setStages(_stages);
-        const currentStage = this.currentStage ? this.currentStage : (stages[0] || null);
+        const currentStage = this.currentStage ? this.currentStage : stages[0] || null;
         console.log('new stages: ', stages);
         console.log('currentStage: ', currentStage);
         this.setData({ stages, currentStage });
@@ -253,4 +238,13 @@ export default global['__wxComponents']['pages/auctions/auctions'];
 </script>
 <style>
 @import './auctions.css';
+
+.test {
+  text-align: center;
+  padding: 10px 0;
+}
+button {
+  margin: 20upx;
+  font-size: 28upx;
+}
 </style>

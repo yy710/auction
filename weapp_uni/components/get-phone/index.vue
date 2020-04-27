@@ -40,14 +40,14 @@ Component({
 
   methods: {
     onChangeMobile(e) {
-      console.log('onChangeMobile: ', e.detail);
+      // console.log('onChangeMobile: ', e.detail);
       const mobile = e.detail;
       const errMobile = validMobile(mobile);
       this.setData({ mobile, errMobile });
     },
 
     onChangeNickName(e) {
-      console.log('onChangeNickName: ', e.detail);
+      // console.log('onChangeNickName: ', e.detail);
       const nickName = e.detail;
       this.setData({ nickName });
     },
@@ -64,7 +64,7 @@ Component({
       if (this.errMobile || !this.mobile) return 0;
       const data = { nickName: this.nickName, mobile: this.mobile };
       const res = (await request('/enroll', data)).data;
-      console.log('enroll res.data: ', res);
+      // console.log('enroll res.data: ', res);
       if (res.code) {
         this.onPopupClose();
         uni.showToast({

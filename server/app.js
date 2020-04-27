@@ -47,7 +47,7 @@ app.use((req, res, next) => {
   }
   console.log('apptoken: ', req.data.apptoken);
   next();
-}); 
+});  
 
 (async function() {
   // init mogodb connection
@@ -66,6 +66,7 @@ app.use((req, res, next) => {
   app.use('/drawio', express.static('../drawio/src/main/webapp'));
   app.use('/yzcj', express.static('./h5'));
   app.use('/yzauction', express.static('./yz-auction')); 
+  app.use('/yzauction-qrcode', express.static('./qrcode'));  
 
   //----------------------------------------------------------------
   const server = https.createServer(httpsOptions, app);

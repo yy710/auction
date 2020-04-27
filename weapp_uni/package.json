@@ -5,6 +5,7 @@
   "main": "app.js",
   "dependencies": {
     "@vant/weapp": "^1.1.0",
+    "plus-websocket": "^1.0.5",
     "vant": "^2.6.1"
   },
   "devDependencies": {},

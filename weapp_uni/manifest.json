@@ -2,8 +2,8 @@
     "name" : "谊众二手车",
     "appid" : "__UNI__D3CAF10",
     "description" : "谊众二手车竞价平台",
-    "versionName" : "1.0.0",
-    "versionCode" : "100",
+    "versionName" : "0.0.1",
+    "versionCode" : 1,
     "transformPx" : false,
     "app-plus" : {
         "usingComponents" : true,
@@ -78,8 +78,15 @@
                         "spotlight@3x" : "unpackage/res/icons/120x120.png"
                     }
                 }
+            },
+            "splashscreen" : {
+                "android" : {
+                    "hdpi" : "/Users/yuchunjian/Documents/yzauction_start_480.png",
+                    "xhdpi" : "/Users/yuchunjian/Documents/yzauction_start_720.png"
+                }
             }
-        }
+        },
+        "nvueLaunchMode" : "fast"
     },
     "quickapp" : {},
     "mp-weixin" : {
@@ -112,7 +119,7 @@
         },
         "optimization" : {
             "treeShaking" : {
-                "enable" : false
+                "enable" : true
             }
         }
     }
