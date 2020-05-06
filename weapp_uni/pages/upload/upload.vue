@@ -106,7 +106,7 @@ Page({
   bindDateChange(e) {
     console.log('dateChange: ', e);
     const date = e.target.value;
-    this.setData({ date, "car.registerDate": date });
+    this.setData({ date, 'car.registerDate': date });
   },
 
   onLoad(options) {

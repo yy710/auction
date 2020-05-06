@@ -88,7 +88,7 @@ module.exports = function (express) {
 
   router.get('/get-stage', async function (req, res, next) {
     const carid = req.query.carid || (global.currentAuction && global.currentAuction.car.plateNum) || null;
-    global.debug && console.log("get-stage/carid: ", carid);
+    global.debug && console.log('get-stage/carid: ', carid);
 
     if (!carid) {
       return res.json({ code: 0, msg: '当前没有正在竞价车辆！', content: '' });
@@ -211,7 +211,7 @@ module.exports = function (express) {
   router.get('/get-stages', function (req, res, next) {
     const col = global.db.collection('stages');
     col
-      .find({ state: {$in: [0, 1]} })
+      .find({ state: { $in: [0, 1] } })
       .toArray()
       .then((stages) => {
         //console.log("get-stages: ", stages);
@@ -287,7 +287,7 @@ module.exports = function (express) {
       })
       .catch((err) => console.log(err));
   });
-  
+
   router.get('/update-stage-start-time', function (req, res, next) {
     console.log('req.query: ', req.query);
     const { id, start_time } = req.query;
@@ -436,38 +436,62 @@ module.exports = function (express) {
     const user = await global.db.collection('users').findOne({ openid });
     res.json({ errcode: 0, msg: 'ok', content: user && user.mobile });
   });
-   
+
   // app version auto update
-  router.get('/app_version', function(req, res, next){
+  router.get('/app_version', function (req, res, next) {
     //console.log('app_version/req.query: ', req.query);
     const { version, type } = req.query;
     /* res的数据说明
-		 * | 参数名称	     | 一定返回 	| 类型	    | 描述
-		 * | -------------|--------- | --------- | ------------- |
-		 * | versionCode	 | y	    | int	    | 版本号        |
-		 * | versionName	 | y	    | String	| 版本名称      |
-		 * | versionInfo	 | y	    | String	| 版本信息      |
-		 * | forceUpdate	 | y	    | boolean	| 是否强制更新  |
-		 * | downloadUrl	 | y	    | String	| 版本下载链接  |
+     * | 参数名称	     | 一定返回 	| 类型	    | 描述
+     * | -------------|--------- | --------- | ------------- |
+     * | versionCode	 | y	    | int	    | 版本号        |
+     * | versionName	 | y	    | String	| 版本名称      |
+     * | versionInfo	 | y	    | String	| 版本信息      |
+     * | forceUpdate	 | y	    | boolean	| 是否强制更新  |
+     * | downloadUrl	 | y	    | String	| 版本下载链接  |
      */
     let content = null;
-
-    if( version == '001' ){
-      // content = {
-      //   success: true,
-      //   versionCode: 2,
-      //   versionName: "0.0.2",
-      //   versionInfo: "内测版",
-      //   forceUpdate: false,
-      //   downloadUrl: "https://www.all2key.cn/yzauction-qrcode/yzauction_002.wgt"
-      // };
-    }else if( version == '002' ){
+    if (version == '001') {
+      content = {
+        success: true,
+        versionCode: 2,
+        versionName: "0.0.2",
+        versionInfo: "内测版",
+        forceUpdate: true,
+        downloadUrl: "https://www.all2key.cn/yzauction-qrcode/yzauction_002.wgt"
+      };
+    } else if (version == '002') {
       //
     }
-     
-    res.json(content); 
-  }); 
+    console.log("res.json({ content: %s })", content);
+    res.json(content);
+  });
 
+  // modify stages
+  router.get('/modify-stages', function (req, res, next) {
+    const col = global.db.collection('stages');
+    let count = 0;
+    col
+      .find()
+      .toArray()
+      .then((stages) => {
+        stages.forEach((stage) => {
+          const newAucs = [];
+          stage.auctions.forEach((auc) => {
+            if (auc.car.plateNum !== '云A00005') {
+              newAucs.push(auc);
+            }
+          });
+          col
+            .updateOne({ id: stage.id }, { $set: { auctions: newAucs } }, { upsert: false })
+            .then(() => count++)
+            .catch((err) => console.log(err));
+        });
+      })
+      .catch((err) => console.log(err));
+    res.json({ count });
+  });
+ 
   return router;
 };
 

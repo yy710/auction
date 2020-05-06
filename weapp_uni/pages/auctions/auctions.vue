@@ -5,20 +5,6 @@
       <van-field :value="reservePrice" label="车辆保留价" placeholder="请输入保留价" type="digit" border="false" data-field="reservePrice" @change="onChange2"></van-field>
     </van-cell-group>
 
-    <!-- <van-radio-group :value="radio">
-      <van-cell-group title="选择所属竞价场次：">
-        <van-cell v-for="(item, index) in stages" :key="item.id" :title="item.dateString" clickable :data-name="item.id" @click="onClick">
-          <van-radio slot="right-icon" :name="item.id" shape="square" />
-        </van-cell>
-      </van-cell-group>
-    </van-radio-group> -->
-
-    <!-- <van-radio-group :value="radio" @change="radioChange">
-      <van-radio v-for="(item, index) in stages" :key="item.id" :name="item.id">
-        <text style="color:red; font-size: 22rpx;">{{ item.dateString }}</text>
-      </van-radio>
-    </van-radio-group> -->
-
     <van-divider contentPosition="left">竞价场次时间设置</van-divider>
 
     <view class="uni-list">
@@ -31,12 +17,6 @@
     </view>
 
     <w-time-picker ref="picker" @confirm="onConfirm" @cancel="onCancel" />
-
-    <!-- <van-radio-group :value="radio" @change="radioChange">
-      <van-radio name="2"><text style="color:red; font-size: 22rpx;">单选框 1</text></van-radio>
-      <van-radio name="5"><text style="color:red; font-size: 22rpx;">单选框 2</text></van-radio>
-      <van-radio name="8"><text style="color:red; font-size: 22rpx;">单选框 3</text></van-radio>
-    </van-radio-group> -->
 
     <van-button @tap="showPopup">修改所选场次时间</van-button>
     <van-button @tap="addStage">增加新的竞价场次</van-button>
@@ -147,8 +127,7 @@ Page({
       data,
       success: res => {
         console.log('save-stage: ', res.data);
-        wx.switchTab({ url: '../upload/upload' });
-        //wx.navigateTo({ url: '../upload/upload' });
+        wx.navigateTo({ url: '../upload/upload' });
       }
     });
   },

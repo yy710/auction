@@ -20,8 +20,9 @@ const MongoClient = require('mongodb').MongoClient;
 const { httpsOptions, dbUrl, debug, uploadPath } = require('./config.js');
 global.uploadPath = uploadPath;
 global.debug = debug;
-const routerAuction = require('./router-auction');
-const routerLottery = require('./router-lottery');
+const routerAuction = require('./router-auction.js');
+const routerLottery = require('./router-lottery.js');
+const routerHoliday51 = require('./router-holiday51.js');
 const setWss3 = require('./ws-lottery');
 //const EventProxy = require('eventproxy');
 //const session = require('./session.js').session;
@@ -61,6 +62,7 @@ app.use((req, res, next) => {
   app.use('/yz/auction/images', express.static(global.uploadPath));
   app.use('/yz/auction', routerAuction(express));
   app.use('/yz/lottery', routerLottery(express));
+  app.use('/yz/holiday51', routerHoliday51(express));
   app.use('/mymind', express.static('../my-mind'));
   app.use('/mindmaps', express.static('../mindmaps/dist'));
   app.use('/drawio', express.static('../drawio/src/main/webapp'));
@@ -141,9 +143,10 @@ app.use((req, res, next) => {
       return this.tasks.find(task => task.data.appToken == appToken && task.data.state == 2);
     }
   };
+  global.obj_tasks = obj_tasks;
 
   const mainJob = schedule.scheduleJob(new Date('2021-02-27 11:00'), cb(obj_tasks));
-  mainJob.job('manual exec');
+  mainJob.job('manual exec');// = cb(obj)(date)
 })();
 
 //------------------------------------------------------------------

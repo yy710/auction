@@ -1,5 +1,6 @@
 <template>
 <view class="container">
+  <van-divider contentPosition="center">{{ title }}</van-divider>
 	<view class="search-list-container">
 		<scroll-view scroll-y="true" style="height: 80%;width:100%">
 			<view style="border-top: 1px solid #d1d3d4;" v-for="(item, id) in cars" :key="id" @click="goToDetail" :data-id="item.id" :data-tagid="item.tag.id">
@@ -33,11 +34,14 @@ const app = getApp();
 
 Page({
   data: {
+    title: '感谢关注，当前暂无车辆参加竞价',
     cars: []
   },
 
   onLoad: function (options) {
-    //getList(this);
+    if(this.cars.length > 0){
+      this.setData({ title: '当前参加竞价车辆列表' });
+    }
   },
 
   onShow: function(){
