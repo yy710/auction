@@ -39,9 +39,7 @@ Page({
   },
 
   onLoad: function (options) {
-    if(this.cars.length > 0){
-      this.setData({ title: '当前参加竞价车辆列表' });
-    }
+    //
   },
 
   onShow: function(){
@@ -66,7 +64,8 @@ function getList(page) {
     wx.hideLoading();
     console.log("get-cars: ", res.data);
     const cars = res.data.cars;
-    page.setData({ cars });
+    const title = cars.length ? '当前参加竞价车辆列表' : '感谢关注，当前暂无车辆参加竞价';
+    page.setData({ cars, title });
   }).catch(err => {
       wx.hideLoading();
       wx.showModal({ title: '提示', content: '网络异常，请稍后重试', showCancel: false });

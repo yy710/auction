@@ -32,7 +32,6 @@ module.exports = function (express) {
       //console.log("waiting...", r);
       next();
     },
-    //midGetUserInfo(),
     function (req, res, next) {
       //console.log("req.file: ", req.file);
       //console.log("req.body: ", req.body);
@@ -70,20 +69,24 @@ module.exports = function (express) {
   router.get('/delete-photo', function (req, res, next) {
     assert.notEqual(null, req.query.filename);
     const filename = req.query.filename;
-    fs.unlink(global.uploadPath + filename, (err) => {
-      if (err) throw err;
-      console.log(filename, ' was deleted');
-      // remove frome db
-      const col = global.db.collection('images');
-      col
-        .deleteOne({ filename })
-        .then((r) => {
-          assert.equal(1, r.deletedCount);
-          console.log('document was clear');
-          res.json({ errcode: 0, msg: 'file deleted!' });
-        })
-        .catch((err) => console.log(err));
-    });
+    deleteImage(filename)
+      .then((r) => res.json(r))
+      .catch((err) => console.log(err));
+
+    // fs.unlink(global.uploadPath + filename, (err) => {
+    //   if (err) throw err;
+    //   console.log(filename, ' was deleted');
+    //   // remove frome db
+    //   global.db
+    //     .collection('images')
+    //     .deleteOne({ filename })
+    //     .then((r) => {
+    //       assert.equal(1, r.deletedCount);
+    //       console.log('document was clear');
+    //       res.json({ errcode: 0, msg: 'file deleted!' });
+    //     })
+    //     .catch((err) => console.log(err));
+    // });
   });
 
   router.get('/get-stage', async function (req, res, next) {
@@ -198,7 +201,7 @@ module.exports = function (express) {
     delete data.sid;
     // get images
     const images = await global.db.collection('images').find({ car_plat_num: plateNum }).toArray();
-    const car = { ...data.car, carType, images };
+    const car = { ...data.car, carType, images, stageid: '' };
     try {
       await global.db.collection('cars').replaceOne({ plateNum }, car, { upsert: true });
       res.json({ msg: 'ok', errcode: 0 });
@@ -251,7 +254,7 @@ module.exports = function (express) {
             const { price, addNum } = log.data;
             return {
               text: new Date(log.date).toLocaleString(),
-              desc: `${log.data.user.userInfo.nickName}出价: ¥${addNum} + ¥${price} = ¥${
+              desc: `${log.data.user.userInfo.nickName}-${log.data.user.mobile}出价: ¥${addNum} + ¥${price} = ¥${
                 parseInt(price) + parseInt(addNum)
               }`
             };
@@ -294,7 +297,10 @@ module.exports = function (express) {
     global.db
       .collection('stages')
       .updateOne({ id }, { $set: { start_time } })
-      .then(() => res.json({ msg: 'ok' }))
+      .then(() => {
+        global.obj_tasks.exec('update-stage-start-time');
+        res.json({ errcode: 0, msg: 'ok' });
+      })
       .catch((err) => console.log(err));
   });
 
@@ -308,13 +314,13 @@ module.exports = function (express) {
       car: await global.db.collection('cars').findOne({ plateNum: platNum })
     };
     console.log('save-stage/auction: ', auction);
-    global.db
-      .collection('stages')
-      .updateOne({ id: stageid }, { $push: { auctions: auction } })
-      .then((r) => {
-        res.json({ msg: 'ok' });
-      })
-      .catch((err) => console.log(err));
+    const r = await global.db.collection('stages').updateOne({ id: stageid }, { $push: { auctions: auction } });
+    assert.equal(1, r.matchedCount);
+    assert.equal(1, r.modifiedCount);
+    //await global.db.collection('cars').deleteOne({ plateNum: platNum });
+    await global.db.collection('cars').updateOne({ plateNum: platNum }, { $set: { stageid } }, { upsert: false });
+    global.obj_tasks.exec('save-stage');
+    res.json({ errcode: 0, msg: '竞价信息已保存！' });
   });
 
   router.get('/add-stage', function (req, res, next) {
@@ -339,8 +345,8 @@ module.exports = function (express) {
       .collection('stages')
       .find({ state: { $in: [0, 1, 2] } })
       .toArray();
-    stages.forEach((stage) => {
-      stage.auctions.forEach((auction) => {
+    stages.length > 0 && stages.forEach((stage) => {
+      if(stage.auctions.length > 0) stage.auctions.forEach((auction) => {
         const content = {
           id: auction.car.plateNum,
           tag: { id: 0, type: 'warning', color: 'green', msg: '等待竞价开始' },
@@ -366,7 +372,7 @@ module.exports = function (express) {
 
         cars.push(content);
       });
-    });
+    }); 
     res.json({ code: 1, msg: 'ok', cars });
   });
 
@@ -455,15 +461,15 @@ module.exports = function (express) {
       content = {
         success: true,
         versionCode: 2,
-        versionName: "0.0.2",
-        versionInfo: "内测版",
+        versionName: '0.0.2',
+        versionInfo: '内测版',
         forceUpdate: true,
-        downloadUrl: "https://www.all2key.cn/yzauction-qrcode/yzauction_002.wgt"
+        downloadUrl: 'https://www.all2key.cn/yzauction-qrcode/yzauction_002.wgt'
       };
     } else if (version == '002') {
       //
     }
-    console.log("res.json({ content: %s })", content);
+    console.log('res.json({ content: %s })', content);
     res.json(content);
   });
 
@@ -491,9 +497,61 @@ module.exports = function (express) {
       .catch((err) => console.log(err));
     res.json({ count });
   });
- 
+
+  router.get('/get-isolatecars', async function (req, res, next) {
+    const cars = await global.db.collection('cars').find({ stageid: '' }).toArray();
+    res.json({ errcode: 0, msg: 'success', content: cars });
+  });
+
+  router.get('/delete-car', async function (req, res, next) {
+    try {
+      const { plateNum } = req.query;
+      const images = await global.db.collection('images').find({ car_plat_num: plateNum }).toArray();
+      images.length != 0 && images.forEach((image) => deleteImage(image.filename));
+      const r = await global.db.collection('cars').deleteOne({ plateNum });
+      assert.equal(1, r.deletedCount);
+      res.json({ errcode: 0, msg: `car: ${plateNum} deleted!` });
+    } catch (error) {
+      console.log(err);
+    }
+  });
+
+  router.get('/unlink-car', function (req, res, next) {
+    const { plateNum, stageid } = req.query;
+    global.db
+      .collection('stages')
+      .updateOne({ id: stageid }, { $pull: { auctions: { 'car.plateNum': plateNum } } }, { upsert: false })
+      .then((r) => {
+        //console.log(r);
+        assert.equal(1, r.matchedCount);
+        assert.equal(1, r.modifiedCount);
+        res.json({ errcode: 0, msg: `car: ${plateNum} unlinked!` });
+      })
+      .then((r) => global.db.collection('cars').updateOne({ plateNum }, { $set: { stageid: '' } }, { upsert: false }))
+      .catch((err) => console.log(err));
+  });
+
   return router;
 };
+
+function deleteImage(filename) {
+  return new Promise(function (resolve, reject) {
+    fs.unlink(global.uploadPath + filename, (err) => {
+      if (err) reject(err);
+      console.log(filename, ' was deleted');
+      // remove frome db
+      global.db
+        .collection('images')
+        .deleteOne({ filename })
+        .then((r) => {
+          assert.equal(1, r.deletedCount);
+          console.log('document was clear');
+          resolve({ errcode: 0, msg: 'file deleted!' });
+        })
+        .catch((err) => reject(err));
+    });
+  });
+}
 
 function midGetUserInfo() {
   return async function (req, res, next) {

@@ -33,7 +33,15 @@
       "path": "pages/history/history",
       "style": {}
     }
-  ],
+      ,{
+            "path" : "pages/admin-stages/admin-stages",
+            "style" : {}
+        }
+        ,{
+            "path" : "pages/isolate-cars/isolate-cars",
+            "style" : {}
+        }
+    ],
   "tabBar": {
     "backgroundColor": "#ffffff",
     "color": "#c0c0c0",

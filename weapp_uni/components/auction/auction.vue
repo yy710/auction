@@ -1,5 +1,7 @@
 <template>
   <view>
+    <!-- <van-divider contentPosition="center" v-if="isBuyer">您的出价为当前最高价! </van-divider> -->
+    <van-notice-bar v-if="isBuyer" scrollable="false" text="您的出价为当前最高价!" color="red" left-icon="volume" />
     <van-count-down use-slot ref="countDown" v-if="show[0]" :time="time" :auto-start="true" @finish="finished" @change="onTimeChange">
       <view style="padding-left:10px">
         <text>距离竞价结束还剩余</text>
@@ -109,7 +111,8 @@ Component({
     time3: 20 * 60 * 1000,
     state: 'ready', // ready | go | stop
     lastCarid: null, // store carid from webSocket for next action
-    disableAdd: false
+    disableAdd: false,
+    isBuyer: false
   },
 
   lifetimes: {
@@ -267,7 +270,8 @@ function socketConnect(page) {
         time,
         state: data.state,
         lastCarid: data.carid,
-        disableAdd: data.time < 0
+        disableAdd: data.time < 0,
+        isBuyer: uni.getStorageSync('sid') === data.sid
       });
       // change price of parent component
       page.triggerEvent('changePrice', { price, reachReserve: data.price >= data.reserve });
@@ -278,6 +282,16 @@ function socketConnect(page) {
 
   socketTask.onClose(e => {
     console.log('socket close: ', e);
+    if(page.isBuyer){
+      uni.showModal({
+        title: '恭喜你',
+        content: `以¥${page.price}元拍得此车，随后我们的工作人员会与您联系办理相关提车手续，点击右下角“我的车”可查看具体信息。`,
+        showCancel: false,
+        success: () => {
+          //
+        }
+      });
+    }
   });
 
   page.socketTask = socketTask;

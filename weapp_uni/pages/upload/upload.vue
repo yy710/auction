@@ -43,7 +43,7 @@
     </block>
 
     <van-cell-group title="车辆展示信息：" v-if="b[2]">
-      <van-field :value="car.carTitle" maxlength="20" label="描述标题：" placeholder="请输入车辆描述标题" @change="onChange" data-id="carTitle" required></van-field>
+      <van-field :value="car.carTitle" label="描述标题：" placeholder="请输入车辆描述标题" @change="onChange" data-id="carTitle" required></van-field>
       <van-field
         :value="car.mileage"
         maxlength="10"

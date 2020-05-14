@@ -41,14 +41,8 @@ function _request(host, apptoken) {
       const sid = wx.getStorageSync('sid');
       wx.request({
         url: host + action,
-        header: {
-          apptoken,
-          ...header
-        },
-        data: {
-          sid,
-          ...data
-        },
+        header: { apptoken, ...header },
+        data: { sid, ...data },
         success: resolve,
         fail: reject
       });

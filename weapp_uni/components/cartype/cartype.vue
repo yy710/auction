@@ -1,7 +1,7 @@
 <template>
   <view>
     <van-cell-group title="车型信息" v-if="show == 'field'">
-      <van-field v-for="(item, index) in _carType" :key="index" v-if="t[index]" :value="item" :label="t[index]" border="false" :id="index" @change="onChange"></van-field>
+      <van-field v-for="(item, index) in _carType" :key="index" v-if="t[index]" :value="item" :label="t[index]" border="false" :id="index" :data-id="index" @change="onChange"></van-field>
     </van-cell-group>
 
     <van-cell-group title="车型信息" v-if="show == 'cell'">
@@ -76,7 +76,8 @@ Component({
     },
     onChange(e) {
       console.log('onChange: ', e);
-      this.setData({ [`_carType.${e.target.id}`]: e.detail });
+      //this.setData({ [`_carType.${e.target.id}`]: e.detail });
+      this.setData({ [`_carType.${e.currentTarget.dataset.id}`]: e.detail });
     }
   }
 });

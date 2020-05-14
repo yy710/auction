@@ -2,7 +2,7 @@
   <view>
     <van-cell-group title="竞价价格设置">
       <van-field :value="startPrice" label="车辆起拍价" placeholder="请输入起拍价" type="number" border="false" data-field="startPrice" @change="onChange2"></van-field>
-      <van-field :value="reservePrice" label="车辆保留价" placeholder="请输入保留价" type="digit" border="false" data-field="reservePrice" @change="onChange2"></van-field>
+      <van-field :value="reservePrice" label="车辆保留价" placeholder="请输入保留价" type="number" border="false" data-field="reservePrice" @change="onChange2"></van-field>
     </van-cell-group>
 
     <van-divider contentPosition="left">竞价场次时间设置</van-divider>
@@ -43,9 +43,6 @@ Page({
     ],
     currentStage: null,
     radio: '1',
-    currentDate: '2020-10-10 08:30',
-    startDate: formatTime(new Date()),
-    endDate: '2020-12-31 00:00',
     platNum: null,
     current: 0
   },
@@ -116,20 +113,30 @@ Page({
       stageid: this.data.currentStage.id,
       platNum: this.data.platNum
     };
+    console.log('save-stage/data: ', data);
 
-    if (!data.platNum) {
-      console.log('save-stage/data: ', data);
-      return 0;
+    if (!data.platNum || !data.startPrice || !data.reservePrice || parseInt(data.startPrice) > parseInt(data.reservePrice)) {
+      uni.showModal({
+        title: '请填写竞拍价格！',
+        showCancel: false,
+        success:function(){
+          //
+        }
+      });
+    }else{
+      wx.request({
+        url: app.globalData.host + '/save-stage',
+        data,
+        success: res => {
+          console.log('save-stage: ', res.data);
+          uni.showToast({ 
+            title: res.data.msg, 
+            icon: 'success', 
+            duration: 1000,
+            success: () => wx.navigateTo({ url: '../upload/upload' })});
+        }
+      });
     }
-
-    wx.request({
-      url: app.globalData.host + '/save-stage',
-      data,
-      success: res => {
-        console.log('save-stage: ', res.data);
-        wx.navigateTo({ url: '../upload/upload' });
-      }
-    });
   },
 
   addStage() {
@@ -206,13 +213,6 @@ function _setStages(f) {
   };
 }
 
-function nextDay() {
-  return new Date(new Date().getTime() + 24 * 60 * 60 * 1000);
-}
-
-function nextMonth() {
-  return new Date(new Date().getTime() + 30 * 24 * 60 * 60 * 1000);
-}
 export default global['__wxComponents']['pages/auctions/auctions'];
 </script>
 <style>

@@ -48,9 +48,9 @@ app.use((req, res, next) => {
   }
   console.log('apptoken: ', req.data.apptoken);
   next();
-});  
+});
 
-(async function() {
+(async function () {
   // init mogodb connection
   if (!global.db) {
     // static method
@@ -67,8 +67,8 @@ app.use((req, res, next) => {
   app.use('/mindmaps', express.static('../mindmaps/dist'));
   app.use('/drawio', express.static('../drawio/src/main/webapp'));
   app.use('/yzcj', express.static('./h5'));
-  app.use('/yzauction', express.static('./yz-auction')); 
-  app.use('/yzauction-qrcode', express.static('./qrcode'));  
+  app.use('/yzauction', express.static('./yz-auction'));
+  app.use('/yzauction-qrcode', express.static('./qrcode'));
 
   //----------------------------------------------------------------
   const server = https.createServer(httpsOptions, app);
@@ -108,70 +108,72 @@ app.use((req, res, next) => {
       wss2.handleUpgrade(request, socket, head, function done(ws) {
         wss2.emit('connection', ws, request);
       });
-    } else if(pathname === '/lottery'){
+    } else if (pathname === '/lottery') {
       wss3.handleUpgrade(request, socket, head, function done(ws) {
         wss3.emit('connection', ws, request);
       });
-    }
-    else {
+    } else {
       socket.destroy();
     }
   });
 
   const port = 443;
-  server.listen(port, function() {
+  server.listen(port, function () {
     console.log('https server is running on port ', port);
   });
 
   //---------------------------------------------------------------
   const obj_tasks = {
     tasks: [],
+    wsss,
+    tasksData: [],
+    // entrance
     exec: async function load(date) {
-      // [debug]
-      console.log('mainJob started at ', date);
-
+      global.debug && console.log('mainJob started at ', date);
       try {
         // get tasks data from mongodb in one houre
-        const _tasks = await findTasks();
-        console.log('_tasks', _tasks);
-        this.tasks = tasks2jobs(wsss, _tasks);
+        this.tasksData = await this.findTasks();
+        global.debug && console.log('tasksData: ', this.tasksData);
+        return this.createTasks();
       } catch (error) {
         console.log(error);
       }
     },
-    getTask: function(appToken = 'yz_auction') {
-      return this.tasks.find(task => task.data.appToken == appToken && task.data.state == 2);
+    getTask: function (taskid) {
+      return this.tasks.find(t => t.data.id == taskid);
+    },
+    // avoid by change taskData
+    updateTask: function (taskData) {
+      const _task = new Task(wsss, taskData);
+      let task = this.getTask(taskData.id);
+      if(task){
+        task = _task;
+      }else{
+        this.tasks.push(_task);
+      }
+      return this;
+    },
+    findTasks: function (col = global.db.collection('stages')) {
+      return col.aggregate([{ $match: { state: { $in: [0, 1] } } }, { $sort: { start_time: 1 } }]).toArray().catch((err) => console.log(err));
+    },
+    createTasks: function(){
+      //this.tasks = this.tasksData.map(taskData => new Task(this.wsss, taskData));
+      this.tasksData.forEach(t => {
+        this.updateTask(t);
+      });
+      return this;
     }
   };
-  global.obj_tasks = obj_tasks;
 
-  const mainJob = schedule.scheduleJob(new Date('2021-02-27 11:00'), cb(obj_tasks));
-  mainJob.job('manual exec');// = cb(obj)(date)
+  global.obj_tasks = obj_tasks;
+  //const mainJob = schedule.scheduleJob(new Date('2021-02-27 11:00'), cb(obj_tasks));
+  //const mainJob = schedule.scheduleJob('*/5 8-18 * * *', cb(obj_tasks));
+  //mainJob.job('manual exec');
+  cb(obj_tasks)('cron');
+
+  //------------------------------------------------------------------
+  function cb(obj) {
+    return date => obj.exec(date);
+  }
 })();
 
-//------------------------------------------------------------------
-function cb(obj) {
-  return function(date) {
-    obj.exec(date);
-  };
-}
-
-function findTasks() {
-  return global.db
-    .collection('stages')
-    .aggregate([{ $match: { state: 0 } }, { $sort: { start_time: 1 } }])
-    .toArray()
-    .catch(err => console.log(err));
-}
-
-/**
- *
- * @param { Map } wsss
- * @param { Array } tasks
- * @return { Task }
- */
-function tasks2jobs(wsss, tasks) {
-  return tasks.map(task => {
-    return new Task(wsss, task);
-  });
-}

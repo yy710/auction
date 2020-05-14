@@ -53,6 +53,7 @@ class Task {
     this.wss = wsss.get(data.app_token);
     this.updateState(1);
     this.countDown = new CountDown();
+    this.maxSockets = 0;
     // currentauction: {
     //   state  0: ready, 1: go, 2: sold, 3: 流拍
     //   price  起拍价
@@ -93,17 +94,19 @@ class Task {
           global.currentAuction.state = isSold(global.currentAuction) ? 2 : 3;
           return global.db
             .collection('auctions')
-            .insertOne({ ...global.currentAuction, buyer, logs, endTime: new Date().getTime() });
+            .insertOne({ ...global.currentAuction, buyer, maxSockets: this.maxSockets, logs, endTime: new Date().getTime() });
         })
         .then(() => this.nextAuction())
         .catch((err) => console.log(err));
     });
   }
 
-  broadcast(data = this.getCurrent()) {
+  broadcast(data = {}) {
+    const _data = this.getCurrent();
+    const msg = { ..._data, ...data };
     // [debug]
-    console.log('broadcast: ', data);
-    //{
+    console.log('broadcast: ', msg);
+    //_data: {
     //  price: this.auc.price,
     //  time: this.countDown.get(),
     //  state: this.auc.state,
@@ -112,7 +115,7 @@ class Task {
     this.wss.clients.forEach((client) => {
       // SocketServer: { CONNECTING: 0, OPEN: 1, CLOSING: 2, CLOSED: 3 }
       if (client.readyState === 1) {
-        client.send(JSON.stringify(data));
+        client.send(JSON.stringify(msg));
       }
     });
   }
@@ -175,10 +178,13 @@ class Task {
   }
 
   handleConnection(socket, req) {
+    if(this.wss.clients.size > this.maxSockets)this.maxSockets = this.wss.clients.size;
     // [debug]
-    console.log('client ip: ', req.connection.remoteAddress);
-    console.log('client token: ', req.headers.token);
-    console.log('app token: ', req.headers.apptoken);
+    console.log('client ip: ', req.connection.remoteAddress); 
+    //console.log('client token: ', req.headers.token);
+    //console.log('app token: ', req.headers.apptoken);
+    console.log('max clients: ', this.maxSockets); 
+    // setOnlineForUser();
 
     this.sayHellow(socket);
     this.addListenerToAllSocket();
@@ -209,6 +215,8 @@ class Task {
       this.updateState(3); 
       this.closeAllSocket();
       //this.wss.removeAllListeners('connection');
+      // remove stage from stages
+
     } else {
       // [debug]
       console.log('next auction carid: ', global.currentAuction.car.plateNum);
@@ -227,6 +235,7 @@ class Task {
       // SocketServer: { CONNECTING: 0, OPEN: 1, CLOSING: 2, CLOSED: 3 }
       if (client.readyState === 1) {
         client.close();
+        // setOfflineForUser();
       }
     });
   }
@@ -254,22 +263,25 @@ class Task {
     const user = await getUser(msg.user);
     if (!user) {
       console.log('addPrice: deny!');
-      return this;
+      return this;  
     }
 
     if (typeof global.currentAuction.price == 'string') global.currentAuction.price = parseInt(global.currentAuction.price);
-    global.currentAuction.price += parseInt(msg.addNum);
-    if (global.currentAuction.price >= global.currentAuction.reserve) {
-      // start 20s 计时器
-      this.countDown.reset(20);
+    // to sure user add price for he see
+    if(msg.price == global.currentAuction.price){
+      global.currentAuction.price += parseInt(msg.addNum);
+      if (global.currentAuction.price >= global.currentAuction.reserve) {
+        // start 20s 计时器
+        this.countDown.reset(20);
+      }
+      this.broadcast({ sid: msg.user });
     }
-    this.broadcast();
     // save to logs
     delete user._id;
     msg.user = user;
     this.logger.save('addPrice', msg);
     return this;
-  }
+  } 
 }
 
 class Logger {
