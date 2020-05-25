@@ -41,6 +41,10 @@
             "path" : "pages/isolate-cars/isolate-cars",
             "style" : {}
         }
+        ,{
+            "path" : "pages/admin-online/admin-online",
+            "style" : {}
+        }
     ],
   "tabBar": {
     "backgroundColor": "#ffffff",

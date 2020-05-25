@@ -13,10 +13,11 @@ export default {
 
   globalData: {
     sid: null,
-    userInfo: {},
+    user: { mobile: '', userInfo: {} },
     host: 'https://www.all2key.cn/yz/auction',
     carid: null,
-    apptoken: 'yz_auction'
+    apptoken: 'yz_auction',
+    review: false
   },
 
   methods: {}

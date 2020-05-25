@@ -6,6 +6,10 @@ const { AppID, AppSecret, JisuAppkey } = require('./config.js');
 const { stages } = require('./mock');
 const { sid2openid } = require('./common.js');
 const WXBizDataCrypt = require('./WXBizDataCrypt');
+const accessToken = require('./access_token.js');
+const SendMsg = require('./sent-msg.js');
+const Logger = require('./class-logger.js');
+
 const storage = multer.diskStorage({
   destination: function (req, file, cb) {
     cb(null, global.uploadPath);
@@ -21,7 +25,7 @@ const crypto = require('crypto');
 
 module.exports = function (express) {
   const router = express.Router();
-
+  //const routerJsapiTicket = express.Router();
   router.post(
     '/upload-photos',
     // async function
@@ -66,27 +70,30 @@ module.exports = function (express) {
     }
   );
 
+  // get user info
+  router.use(async function (req, res, next) {
+    try {
+      const { sid } = req.query;
+      const openid = await sid2openid(sid);
+      //console.log("openid: ", openid);
+      const _user = await global.db.collection('users').findOne({ openid });
+      const user = { ..._user, openid };
+      if (!req.data) req.data = {};
+      req.data.user = user;
+      req.query.user = user;
+      console.log("req.data: ", req.data);
+      next();
+    } catch (error) {
+      console.log(error);
+    }
+  });
+
   router.get('/delete-photo', function (req, res, next) {
     assert.notEqual(null, req.query.filename);
     const filename = req.query.filename;
     deleteImage(filename)
       .then((r) => res.json(r))
       .catch((err) => console.log(err));
-
-    // fs.unlink(global.uploadPath + filename, (err) => {
-    //   if (err) throw err;
-    //   console.log(filename, ' was deleted');
-    //   // remove frome db
-    //   global.db
-    //     .collection('images')
-    //     .deleteOne({ filename })
-    //     .then((r) => {
-    //       assert.equal(1, r.deletedCount);
-    //       console.log('document was clear');
-    //       res.json({ errcode: 0, msg: 'file deleted!' });
-    //     })
-    //     .catch((err) => console.log(err));
-    // });
   });
 
   router.get('/get-stage', async function (req, res, next) {
@@ -102,7 +109,12 @@ module.exports = function (express) {
       const stage = await global.db.collection('stages').findOne({ 'auctions.car.plateNum': carid });
       const auction = stage.auctions.find((item) => item.car.plateNum == carid);
       const { registerDate, carTitle, mileage, carType, images, carDescrible, plateNum } = auction.car;
+      
+      delete carType._id;
       delete carType.carlist;
+
+      const { user } = req.query;
+      //console.log(user);
       const msg = {
         code: 1,
         msg: 'success',
@@ -115,12 +127,25 @@ module.exports = function (express) {
           auctionState: auction.state,
           carInfo: { plateNum, registerDate, carTitle, mileage, carDescrible },
           carType,
-          imageURLs: images.map((item) => `https://www.all2key.cn/yz/auction/images/${item.filename}`)
+          imageURLs: images.map((item) => `https://www.all2key.cn/yz/auction/images/${item.filename}`),
+          prePrice: await getPrePrice(user, carid)
         }
       };
       res.json(msg);
     } catch (error) {
       console.log(error);
+      res.json({ code: 0, msg: 'fail' });
+    }
+
+    function getPrePrice(user, carid){
+      return (new Logger()).findAction('addPrePrice', { "data.carid": carid, "data.user.openid": user.openid })
+        .then(logs => {
+          if(logs){
+            return logs.pop().data.prePrice
+          }
+          return 0;
+        })
+        .catch(err => console.log(err));
     }
   });
 
@@ -227,18 +252,19 @@ module.exports = function (express) {
     const { sid } = req.query;
     assert.notEqual(null, sid);
     const openid = await sid2openid(sid);
-    console.log('get-mycar openid: ', openid);
+    const user = await global.db.collection('users').findOne({ openid });
+    //console.log('get-mycar openid: ', openid);
     const mycars = await global.db.collection('auctions').find({ 'buyer.openid': openid }).toArray();
     //console.log('mycars: ', mycars);
-    const content = mycars.map((item) => {
+    const cars = mycars.map((item) => {
       return {
         plateNum: item.car.plateNum,
-        price: item.price,
+        price: item.buyer.price,
         title: item.car.carTitle,
         imageURL: 'https://www.all2key.cn/yz/auction/images/' + item.car.images[0].filename
       };
     });
-    res.json({ msg: 'ok', content });
+    res.json({ errcode: 0, msg: 'ok', content: { user, cars } });
   });
 
   router.get('/get-history', function (req, res, next) {
@@ -254,21 +280,17 @@ module.exports = function (express) {
             const { price, addNum } = log.data;
             return {
               text: new Date(log.date).toLocaleString(),
-              desc: `${log.data.user.userInfo.nickName}-${log.data.user.mobile}出价: ¥${addNum} + ¥${price} = ¥${
-                parseInt(price) + parseInt(addNum)
-              }`
+              desc: `${log.data.user.userInfo.nickName}-${log.data.user.mobile}出价: ¥${addNum} + ¥${price} = ¥${parseInt(price) + parseInt(addNum)}`
             };
           });
-        res.json({ msg: 'ok', content });
+        res.json({ msg: 'ok', reserve: auction.reserve, content });
       })
       .catch((err) => console.log(err));
   });
 
   router.get('/get-auctions', function (req, res, next) {
     const col = global.db.collection('auctions');
-    col
-      .find({})
-      .toArray()
+    col.find({}).toArray()
       .then((auctions) => {
         //console.log("get-stages: ", stages);
         const content = auctions.map((auction) => {
@@ -279,7 +301,7 @@ module.exports = function (express) {
             startTime: auction.startTime,
             endTime: auction.endTime,
             startPrice: auction.startPrice,
-            endPrice: auction.price,
+            endPrice: auction.buyer.price,
             reservePrice: auction.reserve,
             //logs: auction.logs,
             tag: auction.state === 2 ? '已成交' : '流拍',
@@ -309,16 +331,18 @@ module.exports = function (express) {
     const { stageid, startPrice, reservePrice, platNum } = req.query;
     const auction = {
       state: 0,
-      price: startPrice,
-      reserve: reservePrice,
+      price: parseInt(startPrice),
+      reserve: parseInt(reservePrice),
       car: await global.db.collection('cars').findOne({ plateNum: platNum })
     };
-    console.log('save-stage/auction: ', auction);
+    //console.log('save-stage/auction: ', auction);
     const r = await global.db.collection('stages').updateOne({ id: stageid }, { $push: { auctions: auction } });
     assert.equal(1, r.matchedCount);
     assert.equal(1, r.modifiedCount);
     //await global.db.collection('cars').deleteOne({ plateNum: platNum });
     await global.db.collection('cars').updateOne({ plateNum: platNum }, { $set: { stageid } }, { upsert: false });
+    const logger = new Logger();
+    logger.save('addPrePrice',  { prePrice: parseInt(reservePrice), carid: platNum, user: { openid: 'yz_auction', mobile: '00000000000', userInfo: { nickName: 'yz_auction' } } });
     global.obj_tasks.exec('save-stage');
     res.json({ errcode: 0, msg: '竞价信息已保存！' });
   });
@@ -345,34 +369,36 @@ module.exports = function (express) {
       .collection('stages')
       .find({ state: { $in: [0, 1, 2] } })
       .toArray();
-    stages.length > 0 && stages.forEach((stage) => {
-      if(stage.auctions.length > 0) stage.auctions.forEach((auction) => {
-        const content = {
-          id: auction.car.plateNum,
-          tag: { id: 0, type: 'warning', color: 'green', msg: '等待竞价开始' },
-          imageURL: 'https://www.all2key.cn/yz/auction/images/' + auction.car.images[0].filename,
-          title: auction.car.carTitle,
-          carTime: auction.car.registerDate,
-          gongLi: auction.car.mileage / 10000,
-          price: parseInt(auction.car.price) / 10000,
-          firstPay: auction.car.carType.price,
-          price: auction.price
-        };
+    stages.length > 0 &&
+      stages.forEach((stage) => {
+        if (stage.auctions.length > 0)
+          stage.auctions.forEach((auction) => {
+            const content = {
+              id: auction.car.plateNum,
+              tag: { id: 0, type: 'warning', color: 'green', msg: '等待竞价开始' },
+              imageURL: 'https://www.all2key.cn/yz/auction/images/' + auction.car.images[0].filename,
+              title: auction.car.carTitle,
+              carTime: auction.car.registerDate,
+              gongLi: auction.car.mileage / 10000,
+              price: parseInt(auction.car.price) / 10000,
+              firstPay: auction.car.carType.price,
+              price: auction.price
+            };
 
-        // update tag of car from auctions collection and currentAuction
-        if (auctions.find((item) => item.car.plateNum === content.id)) {
-          content.tag = { id: 2, type: 'primary', color: 'grey', msg: '竞价已结束' };
-        } else if (
-          global.currentAuction &&
-          global.currentAuction.car &&
-          global.currentAuction.car.plateNum === content.id
-        ) {
-          content.tag = { id: 1, type: 'danger', color: 'red', msg: '正在竞价中' };
-        }
+            // update tag of car from auctions collection and currentAuction
+            if (auctions.find((item) => item.car.plateNum === content.id)) {
+              content.tag = { id: 2, type: 'primary', color: 'grey', msg: '竞价已结束' };
+            } else if (
+              global.currentAuction &&
+              global.currentAuction.car &&
+              global.currentAuction.car.plateNum === content.id
+            ) {
+              content.tag = { id: 1, type: 'danger', color: 'red', msg: '正在竞价中' };
+            }
 
-        cars.push(content);
+            cars.push(content);
+          });
       });
-    }); 
     res.json({ code: 1, msg: 'ok', cars });
   });
 
@@ -427,11 +453,7 @@ module.exports = function (express) {
   router.get('/enroll', function (req, res, next) {
     const { sid, nickName, mobile } = req.query;
     sid2openid(sid)
-      .then((openid) => {
-        return global.db
-          .collection('users')
-          .updateOne({ openid }, { $set: { mobile, 'userInfo.nickName': nickName } }, { upsert: true });
-      })
+      .then((openid) => global.db.collection('users').updateOne({ openid }, { $set: { mobile, 'userInfo.nickName': nickName } }, { upsert: true }))
       .then(() => res.json({ code: 1, msg: 'success' }))
       .catch((err) => console.log(err));
   });
@@ -457,45 +479,48 @@ module.exports = function (express) {
      * | downloadUrl	 | y	    | String	| 版本下载链接  |
      */
     let content = null;
-    if (version == '001') {
+    if (version == '001' || version == '002') {
       content = {
         success: true,
-        versionCode: 2,
-        versionName: '0.0.2',
-        versionInfo: '内测版',
+        versionCode: 3,
+        versionName: '0.0.3',
+        versionInfo: '公测版',
         forceUpdate: true,
-        downloadUrl: 'https://www.all2key.cn/yzauction-qrcode/yzauction_002.wgt'
+        downloadUrl: 'https://www.all2key.cn/yzauction-qrcode/yzauction_003.wgt'
       };
-    } else if (version == '002') {
-      //
     }
     console.log('res.json({ content: %s })', content);
     res.json(content);
   });
 
-  // modify stages
+  // modify stages for temp
   router.get('/modify-stages', function (req, res, next) {
     const col = global.db.collection('stages');
-    let count = 0;
-    col
-      .find()
-      .toArray()
-      .then((stages) => {
-        stages.forEach((stage) => {
-          const newAucs = [];
-          stage.auctions.forEach((auc) => {
-            if (auc.car.plateNum !== '云A00005') {
-              newAucs.push(auc);
-            }
+    const { start_time } = req.query;
+    col.updateOne({ state: 1 }, { $set: { start_time } }, { upsert: false }).then(r => {
+      global.obj_tasks.exec("manual modify stages start_time!");
+      res.json(r);
+    }).catch(err => console.log(err));
+
+    function removeCar(car = '云A00005') {
+      let count = 0;
+      col.find().toArray()
+        .then((stages) => {
+          stages.forEach((stage) => {
+            const newAucs = [];
+            stage.auctions.forEach((auc) => {
+              if (auc.car.plateNum !== car) {
+                newAucs.push(auc);
+              }
+            });
+            col.updateOne({ id: stage.id }, { $set: { auctions: newAucs } }, { upsert: false })
+              .then(() => count++)
+              .catch((err) => console.log(err));
           });
-          col
-            .updateOne({ id: stage.id }, { $set: { auctions: newAucs } }, { upsert: false })
-            .then(() => count++)
-            .catch((err) => console.log(err));
-        });
-      })
-      .catch((err) => console.log(err));
-    res.json({ count });
+        })
+        .catch((err) => console.log(err));
+      res.json({ count });
+    }
   });
 
   router.get('/get-isolatecars', async function (req, res, next) {
@@ -529,6 +554,86 @@ module.exports = function (express) {
       })
       .then((r) => global.db.collection('cars').updateOne({ plateNum }, { $set: { stageid: '' } }, { upsert: false }))
       .catch((err) => console.log(err));
+  });
+
+  router.get('/get-online-users', async function (req, res, next) {
+    try {
+      const sessions = await global.db.collection('sessions').find({ online: true }).toArray();
+      const openids = sessions.map((s) => s.openid);
+      const onlineUsers = await global.db
+        .collection('users')
+        .find({ openid: { $in: openids } })
+        .toArray();
+      const content = sessions.map((s) => {
+        let r = { sid: s.sid, time: s.time, nickName: '未注册', mobile: '无' };
+        onlineUsers.forEach((u) => {
+          if (u.openid == s.openid) {
+            r = { sid: s.sid, time: s.time, nickName: u.userInfo.nickName, mobile: u.mobile };
+          }
+        });
+        return r;
+      });
+      res.json({ errcode: 0, msg: 'success', content });
+    } catch (error) {
+      console.log(error);
+      res.json({ errcode: 1, msg: 'fail', content: {} });
+    }
+  });
+
+  router.get('/set-prePrice', async function (req, res, next) {
+    const { prePrice, carid, user } = req.query;
+    if(!prePrice || !carid || !user){
+      res.json({ errcode: 0, msg: '预出价失败！', content: { user } });
+      return 0;
+    }
+
+    const logger = new Logger();
+    delete user._id;
+
+    await logger.save('addPrePrice', { prePrice, carid, user });
+    const lastData = await logger.aggregate([
+      { $match: { "action" : "addPrePrice", "data.carid": carid } },
+      { $sort: { "data.user.openid": 1, "date": 1 } },
+      { $group: { _id: "$data.user.openid", lastData: { $last: "$data" } } }
+    ]);
+
+    const reservePrice = getMaxPrePrice(lastData);
+    console.log({ reservePrice });
+    const r = await global.db.collection('stages').updateOne(
+      { "auctions.car.plateNum": carid }, 
+      { $set: { "auctions.$.reserve": reservePrice.prePrice, "auctions.$.reserveUser": reservePrice.user } }, 
+      { upsert: false }
+    );
+
+    if (r.matchedCount) {
+      r.modifiedCount && global.obj_tasks.exec('set-prePrince');
+      res.json({ errcode: 0, msg: '预出价成功！', content: { user } });
+    } else {
+      res.json({ errcode: 0, msg: '预出价失败！', content: { user } });
+    }
+
+    function getMaxPrePrice(arr){
+      let maxPrePrice = 0;
+      let index = 0;
+      arr.forEach((item, i) => {
+        if(item.lastData.prePrice > maxPrePrice) {
+          maxPrePrice = item.lastData.prePrice;
+          index = i;
+        }
+      });
+      return arr[index].lastData;
+    }
+
+    // const r = await global.db.collection('stages').updateOne(
+    //   { "auctions.car.plateNum": carid },
+    //   { $max: { "auctions.$.reserve": _prePrice + 0.1 }, $push: { "auctions.$.prePriceLogs": { prePrice, user } } },
+    //   { upsert: false }
+    // );
+  });
+
+  router.get('/get-prePrice', function (req, res, next) {
+    const { prePrice, carid, user } = req.query;
+    res.json({ errcode: 0, msg: '预出价成功！', content: { user } });
   });
 
   return router;
@@ -589,4 +694,4 @@ function updateUserPhone(sid, phone) {
   });
 }
 
-function updateUser(sid, obj = {}) {}
+function updateUser(sid, obj = {}) { }

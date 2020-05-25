@@ -1,6 +1,6 @@
 const assert = require('assert');
 const { inspect } = require('util');
-//const xml2js = require('xml2js');//use to wechat moudle
+//const xml2js = require('xml2js');//use to wechat module
 const https = require('https');
 const WebSocket = require('ws');
 const url = require('url');
@@ -10,23 +10,29 @@ const app = express();
 const { Task } = require('./common.js');
 const { tasks } = require('./mock');
 const schedule = require('node-schedule');
+const axios = require('axios');
 //const bodyParser = require('body-parser')
 //const http = require('http');
 //const xmlparser = require('express-xml-bodyparser');
-//const axios = require('axios');
-const cors = require('cors');
 const MongoClient = require('mongodb').MongoClient;
 // 载入配置文件
-const { httpsOptions, dbUrl, debug, uploadPath } = require('./config.js');
+global.config = require('./config.js');
+const { httpsOptions, dbUrl, debug, uploadPath, workWeixin } = global.config;
 global.uploadPath = uploadPath;
 global.debug = debug;
+
 const routerAuction = require('./router-auction.js');
 const routerLottery = require('./router-lottery.js');
 const routerHoliday51 = require('./router-holiday51.js');
 const setWss3 = require('./ws-lottery');
-//const EventProxy = require('eventproxy');
+
+const EventProxy = require('./eventproxy.js');
+global.ep = new EventProxy();
 //const session = require('./session.js').session;
+
+const cors = require('cors');
 app.use(cors());
+
 app.use((req, res, next) => {
   console.log('req.originalUrl: ', req.originalUrl);
   req.data = {};
@@ -59,10 +65,10 @@ app.use((req, res, next) => {
     global.db = client.db('auction');
   }
 
-  app.use('/yz/auction/images', express.static(global.uploadPath));
   app.use('/yz/auction', routerAuction(express));
   app.use('/yz/lottery', routerLottery(express));
   app.use('/yz/holiday51', routerHoliday51(express));
+  app.use('/yz/auction/images', express.static(global.uploadPath));
   app.use('/mymind', express.static('../my-mind'));
   app.use('/mindmaps', express.static('../mindmaps/dist'));
   app.use('/drawio', express.static('../drawio/src/main/webapp'));
@@ -128,27 +134,26 @@ app.use((req, res, next) => {
     wsss,
     tasksData: [],
     // entrance
-    exec: async function load(date) {
-      global.debug && console.log('mainJob started at ', date);
+    exec: async function load(info) {
+      global.debug && console.log('mainJob started at ', info);
       try {
         // get tasks data from mongodb in one houre
         this.tasksData = await this.findTasks();
-        global.debug && console.log('tasksData: ', this.tasksData);
-        return this.createTasks();
+        //global.debug && console.log('before tasks[0].data: ', this.tasksData[0]);
+        this.createTasks();
+        global.debug && console.log('tasks[0].data: ', this.tasks[0] && this.tasks[0].data);
+        return this;
       } catch (error) {
         console.log(error);
       }
     },
-    getTask: function (taskid) {
-      return this.tasks.find(t => t.data.id == taskid);
-    },
     // avoid by change taskData
     updateTask: function (taskData) {
       const _task = new Task(wsss, taskData);
-      let task = this.getTask(taskData.id);
-      if(task){
-        task = _task;
-      }else{
+      let index = this.tasks.findIndex(t => t.data.id == taskData.id);
+      if (index !== -1) {
+        this.tasks[index] = _task;
+      } else {
         this.tasks.push(_task);
       }
       return this;
@@ -156,7 +161,7 @@ app.use((req, res, next) => {
     findTasks: function (col = global.db.collection('stages')) {
       return col.aggregate([{ $match: { state: { $in: [0, 1] } } }, { $sort: { start_time: 1 } }]).toArray().catch((err) => console.log(err));
     },
-    createTasks: function(){
+    createTasks: function () {
       //this.tasks = this.tasksData.map(taskData => new Task(this.wsss, taskData));
       this.tasksData.forEach(t => {
         this.updateTask(t);
@@ -170,10 +175,37 @@ app.use((req, res, next) => {
   //const mainJob = schedule.scheduleJob('*/5 8-18 * * *', cb(obj_tasks));
   //mainJob.job('manual exec');
   cb(obj_tasks)('cron');
+  global.ep.on('sendMsg', axiosPost);
+
+  // [debug]
+  //setTimeout(() => global.ep.emit('sendMsg', 'test'), 5000);
 
   //------------------------------------------------------------------
   function cb(obj) {
     return date => obj.exec(date);
+  }
+
+  function axiosGet(content) {
+    return axios
+      .get(`http://localhost:3000/send-message?content=${content}`)
+      .then((r) => console.log('sendText: ', JSON.stringify(r.data, null, 4)))
+      .catch((err) => console.log(err));
+  }
+
+  function axiosPost(content) {
+    return axios
+      .post('http://localhost:3000/send-message', { content })
+      .then((r) => console.log('sendText: ', JSON.stringify(r.data, null, 4)))
+      .catch((err) => console.log(err));
+  }
+
+  async function sendMsg(content) {
+    const AccessToken = require('./class-access-token.js');
+    const accessToken = new AccessToken(global.config.workWeixin);
+    const SendMsg = require('./sent-msg.js');
+    const token = (await accessToken.getToken()).token;
+    const sendMsg = new SendMsg(token);
+    sendMsg.sentText({ content });
   }
 })();
 

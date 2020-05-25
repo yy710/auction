@@ -1,72 +1,74 @@
 <template>
   <view>
     <view style="background-color: #777777;line-height: 2;text-align: center;"><text style="color: #FFFFFF;font-size: 16px;flex: 1;">录入二手车信息</text></view>
-
-    <van-cell-group title="行驶证信息：">
-      <van-field :value="car.plateNum" maxlength="10" label="车牌号码：" @change="onChange" data-id="plateNum"></van-field>
-      <!-- <van-field :value="car.vehicleType" maxlength="10" label="车辆类型：" @change="onChange" data-id="vehicleType"></van-field>
-      <van-field :value="car.owner" maxlength="10" label="所有人：" @change="onChange" data-id="owner"></van-field>
-      <van-field :value="car.addr" type="textarea" autosize maxlength="50" label="住  址：" @change="onChange" data-id="addr"></van-field>
-      <van-field :value="car.useCharacter" maxlength="10" label="使用性质：" @change="onChange" data-id="useCharacter"></van-field>
-      <van-field :value="car.model" maxlength="10" label="品牌型号：" @change="onChange" data-id="model"></van-field>
-      <van-field :value="car.engineNum" maxlength="10" label="发动机号：" @change="onChange" data-id="engineNum"></van-field> -->
-      <view class="uni-list">
-        <view class="uni-list-cell">
-          <view class="uni-list-cell-left">注册日期：</view>
-          <view class="uni-list-cell-db">
-            <picker mode="date" :value="date" :start="startDate" :end="endDate" @change="bindDateChange">
-              <view class="uni-input">{{ date }}</view>
-            </picker>
+    <van-divider contentPosition="center" v-if="!isAdmin">无管理权限！</van-divider>
+    <view v-if="isAdmin">
+      <van-cell-group title="行驶证信息：">
+        <van-field :value="car.plateNum" maxlength="10" label="车牌号码：" @change="onChange" data-id="plateNum"></van-field>
+        <!-- <van-field :value="car.vehicleType" maxlength="10" label="车辆类型：" @change="onChange" data-id="vehicleType"></van-field>
+        <van-field :value="car.owner" maxlength="10" label="所有人：" @change="onChange" data-id="owner"></van-field>
+        <van-field :value="car.addr" type="textarea" autosize maxlength="50" label="住  址：" @change="onChange" data-id="addr"></van-field>
+        <van-field :value="car.useCharacter" maxlength="10" label="使用性质：" @change="onChange" data-id="useCharacter"></van-field>
+        <van-field :value="car.model" maxlength="10" label="品牌型号：" @change="onChange" data-id="model"></van-field>
+        <van-field :value="car.engineNum" maxlength="10" label="发动机号：" @change="onChange" data-id="engineNum"></van-field> -->
+        <view class="uni-list">
+          <view class="uni-list-cell">
+            <view class="uni-list-cell-left">注册日期：</view>
+            <view class="uni-list-cell-db">
+              <picker mode="date" :value="date" :start="startDate" :end="endDate" @change="bindDateChange">
+                <view class="uni-input">{{ date }}</view>
+              </picker>
+            </view>
           </view>
         </view>
-      </view>
-      <!-- <van-field :value="car.registerDate" maxlength="10" label="注册日期：" @change="onChange" data-id="registerDate" @focus="popDateTime"></van-field> -->
-      <van-field :value="car.vin" maxlength="20" label="识别代号：" @change="onChange" data-id="vin">
-        <van-button slot="button" size="small" type="primary" @tap="getCarType" v-if="!b[0]">获取车型信息</van-button>
-      </van-field>
-    </van-cell-group>
-
-    <y-cartype show="field" :carType="carType" @confirm="onConfirm" v-if="b[0]"></y-cartype>
-
-    <block v-if="b[1]">
-      <van-cell-group :title="fileLists[0].length == 0 ? '请上传外观照片' : '已上传外观照片：'">
-        <van-uploader data-id="0" :file-list="fileLists[0]" @after-read="afterRead" @delete="deletePhoto"></van-uploader>
+        <!-- <van-field :value="car.registerDate" maxlength="10" label="注册日期：" @change="onChange" data-id="registerDate" @focus="popDateTime"></van-field> -->
+        <van-field :value="car.vin" maxlength="20" label="识别代号：" @change="onChange" data-id="vin">
+          <van-button slot="button" size="small" type="primary" @tap="getCarType" v-if="!b[0]">获取车型信息</van-button>
+        </van-field>
       </van-cell-group>
-
-      <van-cell-group :title="fileLists[1].length == 0 ? '请上传驾驶舱照片' : '已上传驾驶舱照片：'">
-        <van-uploader data-id="1" :file-list="fileLists[1]" @after-read="afterRead" @delete="deletePhoto"></van-uploader>
+    
+      <y-cartype show="field" :carType="carType" @confirm="onConfirm" v-if="b[0]"></y-cartype>
+    
+      <block v-if="b[1]">
+        <van-cell-group :title="fileLists[0].length == 0 ? '请上传外观照片' : '已上传外观照片：'">
+          <van-uploader data-id="0" :file-list="fileLists[0]" @after-read="afterRead" @delete="deletePhoto"></van-uploader>
+        </van-cell-group>
+    
+        <van-cell-group :title="fileLists[1].length == 0 ? '请上传驾驶舱照片' : '已上传驾驶舱照片：'">
+          <van-uploader data-id="1" :file-list="fileLists[1]" @after-read="afterRead" @delete="deletePhoto"></van-uploader>
+        </van-cell-group>
+    
+        <van-cell-group :title="fileLists[2].length == 0 ? '请上传发动机舱照片' : '已上传发动机舱照片：'">
+          <van-uploader data-id="2" :file-list="fileLists[2]" @after-read="afterRead" @delete="deletePhoto"></van-uploader>
+        </van-cell-group>
+      </block>
+    
+      <van-cell-group title="车辆展示信息：" v-if="b[2]">
+        <van-field :value="car.carTitle" label="描述标题：" placeholder="请输入车辆描述标题" @change="onChange" data-id="carTitle" required></van-field>
+        <van-field
+          :value="car.mileage"
+          maxlength="10"
+          label="行驶里程："
+          type="number"
+          placeholder="请输入车辆行驶里程（公里）"
+          @change="onChange"
+          data-id="mileage"
+          required
+        ></van-field>
+        <van-field
+          :value="car.carDescrible"
+          maxlength="200"
+          autosize
+          type="textarea"
+          label="详细描述："
+          placeholder="请输入小于200字的车况描述"
+          @change="onChange"
+          data-id="carDescrible"
+        ></van-field>
       </van-cell-group>
-
-      <van-cell-group :title="fileLists[2].length == 0 ? '请上传发动机舱照片' : '已上传发动机舱照片：'">
-        <van-uploader data-id="2" :file-list="fileLists[2]" @after-read="afterRead" @delete="deletePhoto"></van-uploader>
-      </van-cell-group>
-    </block>
-
-    <van-cell-group title="车辆展示信息：" v-if="b[2]">
-      <van-field :value="car.carTitle" label="描述标题：" placeholder="请输入车辆描述标题" @change="onChange" data-id="carTitle" required></van-field>
-      <van-field
-        :value="car.mileage"
-        maxlength="10"
-        label="行驶里程："
-        type="number"
-        placeholder="请输入车辆行驶里程（公里）"
-        @change="onChange"
-        data-id="mileage"
-        required
-      ></van-field>
-      <van-field
-        :value="car.carDescrible"
-        maxlength="200"
-        autosize
-        type="textarea"
-        label="详细描述："
-        placeholder="请输入小于200字的车况描述"
-        @change="onChange"
-        data-id="carDescrible"
-      ></van-field>
-    </van-cell-group>
-
-    <van-button block type="primary" @click="saveCar" :disabled="!b[3]">保存以上信息</van-button>
+    
+      <van-button block type="primary" @click="saveCar" :disabled="!b[3]">保存以上信息</van-button>
+    </view>
   </view>
 </template>
 
@@ -74,7 +76,7 @@
 import yCartype from '../../components/cartype/cartype';
 global['__wxVueOptions'] = { components: { 'y-cartype': yCartype } };
 global['__wxRoute'] = 'pages/upload/upload';
-const { inQyweixin, request } = require('../../utils/util.js');
+const { inQyweixin, request, auth } = require('../../utils/util.js');
 const app = getApp();
 const host = app.globalData.host;
 
@@ -83,6 +85,7 @@ Page({
     //{ url: 'http://iph.href.lu/60x60?text=default', name: '图片2', isImage: true }
     fileLists: [[], [], []],
     car: {
+      isAdmin: false,
       plateNum: '云A',
       vehicleType: '',
       owner: '',
@@ -110,7 +113,8 @@ Page({
   },
 
   onLoad(options) {
-    console.log('inQyweixin: ', inQyweixin());
+    //console.log('inQyweixin: ', inQyweixin());
+    auth(this).catch(err => console.log(err));
   },
 
   onChange(e) {

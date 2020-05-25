@@ -4,7 +4,7 @@
 
     <view class="car_detail">
       <view class="car_detail_head">{{ detail.carInfo.carTitle }}</view>
-      <view class="car_price_box">
+      <view class="car_price_box" v-if="showPrice">
         <view class="car_price">
           {{ detail.startPrice }}
           <i class="wan">万</i>
@@ -14,7 +14,17 @@
       </view>
     </view>
 
-    <y-auction ref="auction" :carid="detail.carInfo.plateNum" :time2="detail.stageStartTime" @changePrice="onChangePrice" @changeCar="onChangeCar"></y-auction>
+    <y-auction
+      ref="auction" 
+      :prePrice="detail.prePrice/10000 || ''"
+      :carid="detail.carInfo.plateNum" 
+      :time2="detail.stageStartTime"
+      :startPrice="detail.startPrice"
+      @changePrice="onChangePrice" 
+      @changeCar="onChangeCar" 
+      v-if="showPrice"
+      >
+    </y-auction>
     <y-carinfo :carInfo="detail.carInfo"></y-carinfo>
     <y-cartype show="cell" :carType="detail.carType"></y-cartype>
 
@@ -32,13 +42,13 @@
 import yAuction from '../../components/auction/auction';
 import yCartype from '../../components/cartype/cartype';
 import yCarinfo from '../../components/carinfo/carinfo';
-import ySwiper from '../../components/yswiper/yswiper';
+//import ySwiper from '../../components/yswiper/yswiper';
 global['__wxVueOptions'] = {
   components: {
+    //'y-swiper': ySwiper,
     'y-auction': yAuction,
     'y-cartype': yCartype,
-    'y-carinfo': yCarinfo,
-    'y-swiper': ySwiper
+    'y-carinfo': yCarinfo
   }
 };
 global['__wxRoute'] = 'pages/detail/detail';
@@ -51,7 +61,8 @@ Page({
     reachReserve: false,
     detail: { carInfo: {}, carType: {} },
     isAdmin: false,
-    carid: null
+    carid: null,
+    showPrice: true
   },
 
   onChangePrice(e) {
@@ -68,12 +79,13 @@ Page({
 
   // // page lifetimes start -----------------------------------------------------------------------------------
   onLoad(options) {
-    console.log('page/detail/onLoad()/options: ', options);
+    //console.log('page/detail/onLoad()/options: ', options);
     this.loadPage();
+    if(app.globalData.review)this.setData({ showPrice: false });
   },
 
   onReady() {
-    console.log('page/detail/onReady()/app.globalData.carid = ', app.globalData.carid);
+    //console.log('page/detail/onReady()/app.globalData.carid = ', app.globalData.carid);
     //this.loadPage();
     //console.log('$refs.auction: ', this.$refs.auction);
     //this.$refs.auction.reconnectSocket();
@@ -81,19 +93,19 @@ Page({
   },
 
   onHide() {
-    console.log('page/detail/onHide()');
+    //console.log('page/detail/onHide()');
     //console.log("this.refs.auction.socketTask: ", this.$refs.auction.socketTask)
     //this.$refs.auction.socketTask.close();
   },
 
   onShow() {
-    console.log('pages/detail/onShow()');
+    //console.log('pages/detail/onShow()');
     //console.log("this.refs.auction.socketTask: ", this.$refs.auction.socketTask)
     //this.$refs.auction.sayHello();
   },
 
   onTabItemTap(item) {
-    console.log('page/detail/onTabItemTap()/item: ', item);
+    //console.log('page/detail/onTabItemTap()/item: ', item);
     //app.globalData.carid = null;
     this.loadPage(null);
   },
@@ -103,7 +115,7 @@ Page({
     const that = this;
     console.log('load(carid = %s)', carid);
     wx.showLoading({ title: '正在加载' });
-    request('/get-stage', { carid })
+    return request('/get-stage', { carid })
       .then(res => {
         // res.data : { code: 0, msg: "ok", car: {} }
         console.log('get-stage: ', res.data);
@@ -112,7 +124,8 @@ Page({
         if (code) {
           //const carid = content.carInfo.plateNum;
           //app.globalData.carid = content.carInfo.plateNum;
-          that.setData({ detail: content }, () => that.$refs.auction.sayHello());
+          that.setData({ detail: content });
+          that.showPrice && that.$refs.auction.sayHello();
         } else {
           // no auction car
           wx.showModal({

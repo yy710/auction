@@ -1,6 +1,6 @@
 <template>
   <view>
-    <van-button plain type="primary" @tap="onShowPopup" v-if="showEnroll">竞价报名</van-button>
+    <van-button plain type="primary" @tap="onShowPopup">竞价报名</van-button>
     <van-popup :show="showPopup" @close="onPopupClose" custom-style="height: 200px;width: 90%">
       <van-cell-group title="请填写信息">
         <van-field :value="mobile" type="digit" maxlength="20" label="手机号：" @change="onChangeMobile" placeholder="请如实填写" :error-message="errMobile"></van-field>
@@ -14,13 +14,13 @@
 <script>
 global['__wxRoute'] = 'components/get-phone/index';
 const { request, validMobile } = require('../../utils/util');
+const app = getApp();
 
 Component({
   properties: {},
 
   data: {
     showPopup: false,
-    showEnroll: true,
     nickName: '',
     errMobile: '',
     mobile: null
@@ -28,17 +28,21 @@ Component({
 
   lifetimes: {
     attached() {
-      request('/get-userphone', {})
+      //if(!app.globalData.user.mobile) 
+    }
+  },
+
+  methods: {
+    getUserPhone(){
+      return request('/get-userphone', {})
         .then(res => {
           console.log('get-userphone: ', res.data);
           const mobile = res.data.content;
           this.setData({ mobile, showEnroll: !mobile });
         })
         .catch(err => console.log('get-userphone err: ', err));
-    }
-  },
-
-  methods: {
+    },
+    
     onChangeMobile(e) {
       // console.log('onChangeMobile: ', e.detail);
       const mobile = e.detail;
@@ -67,15 +71,13 @@ Component({
       // console.log('enroll res.data: ', res);
       if (res.code) {
         this.onPopupClose();
-        uni.showToast({
-          title: '报名成功！'
-        });
-        this.setData({ showEnroll: false });
+        uni.showToast({ title: '报名成功！' });
+        app.globalData.user.mobile = data.mobile;
+        app.globalData.user.userInfo.nickName = data.nickName;
+        this.$emit('enroll', { ...data });
       } else {
         this.onPopupClose();
-        uni.showToast({
-          title: '报名失败，请稍后再试！'
-        });
+        uni.showToast({ title: '报名失败，请稍后再试！' });
       }
     }
   }

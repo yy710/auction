@@ -1,6 +1,9 @@
 const assert = require('assert');
 const schedule = require('node-schedule');
 const EventEmitter = require('events');
+const Logger = require('./class-logger.js');
+//const axios = require('axios');
+//const SendMsg = require('./sent-msg.js');
 
 /**
  * @class
@@ -53,6 +56,7 @@ class Task {
     this.wss = wsss.get(data.app_token);
     this.updateState(1);
     this.countDown = new CountDown();
+    //this.sendMsg = new SendMsg();
     this.maxSockets = 0;
     // currentauction: {
     //   state  0: ready, 1: go, 2: sold, 3: 流拍
@@ -74,30 +78,63 @@ class Task {
   }
 
   initCountDown() {
-    this.countDown.on('timeout', (time) => {
+    this.countDown.on('timeout', async time => {
       global.debug && console.log('timeout: ', time);
       // set auction end flag
-      global.currentAuction.state = 2;
+      global.currentAuction && (global.currentAuction.state = 2);
       // save this.currentAuction to db
-      global.db
-        .collection('logs')
-        .find({ action: 'addPrice', 'data.carid': global.currentAuction.car.plateNum })
-        .toArray()
-        .then((logs) => {
-          let buyer = {};
-          if (logs) {
-            const log = logs.filter((log) => log.action === 'addPrice').pop();
-            buyer = log && log.data ? log.data.user : {};
-            delete buyer._id;
-          }
+      const logs = await this.logger.findAction('addPrice', { 'data.carid': global.currentAuction.car.plateNum });
+      const lastBuyerLogData = logs ? logs.pop().data : null;
+      let buyer = {};
 
-          global.currentAuction.state = isSold(global.currentAuction) ? 2 : 3;
-          return global.db
-            .collection('auctions')
-            .insertOne({ ...global.currentAuction, buyer, maxSockets: this.maxSockets, logs, endTime: new Date().getTime() });
-        })
-        .then(() => this.nextAuction())
-        .catch((err) => console.log(err));
+      if (lastBuyerLogData) {
+        buyer = isSold(global.currentAuction, lastBuyerLogData);
+      } else {
+        // 无人出价
+        global.currentAuction.state = 3;
+      }
+
+      delete buyer._id;
+      global.currentAuction.buyer = buyer;
+      await global.db.collection('auctions')
+        .insertOne({
+          ...global.currentAuction,
+          maxSockets: this.maxSockets,
+          logs,
+          endTime: new Date().getTime()
+        });
+
+      const buyerSid = (await global.db.collection('sessions').findOne({ openid: buyer.openid })).sid;
+      this.broadcast({ buyerSid, buyPrice: buyer.price });
+      setTimeout(() => this.nextAuction(), 5000);
+
+      function isSold(auc, logData) {
+        const price = parseInt(auc.price);
+        const _price = parseInt(logData.price) + parseInt(logData.addNum);
+        assert.equal(_price, price);
+        const user = logData.user;
+        const reserve = parseInt(auc.reserve);
+        const hasPrePrice = auc.reserveUser && auc.reserveUser.openid != 'yz_auction';
+
+        if (price > reserve) {
+          auc.state = 2;
+          return { ...user, price };
+        } else if (price == reserve) {
+          if (hasPrePrice) {
+            auc.state = 2;
+            return { ...auc.reserveUser, price };
+          } else {
+            auc.state = 2;
+            return { ...user, price };
+          }
+        } else if (hasPrePrice) {
+          auc.state = 2;
+          return { ...auc.reserveUser, price: reserve };
+        } else {
+          auc.state = 3;
+          return {};
+        }
+      }
     });
   }
 
@@ -140,12 +177,12 @@ class Task {
     // debug
     console.log('job start at ', date);
     //console.log('task.data.auctions: ', this.data.auctions);
-
+    this.nextAuction();
     this.initWss();
-    this.initCountDown();
     this.updateState(2); // task start, 2: doing
     this.addListenerToAllSocket();
-    this.nextAuction();
+    this.initCountDown();
+    this.countDown.reset(5 * 60);
   }
 
   addListenerToAllSocket() {
@@ -162,8 +199,9 @@ class Task {
             //this.logger.save('receiveMsg', msg);
             if (msg.action === 'addPrice') {
               this.addPrice(msg);
-            }else if(msg.action === 'hello'){
-              this.sayHellow(socket);
+            } else if (msg.action === 'hello') {
+              setOnline(msg.user).then((r) => console.log("matchedCount: %d, modifiedCount: %d", r.matchedCount, r.modifiedCount)).catch((err) => console.log(err));
+              this.sayHello(socket);
             }
           } catch (error) {
             console.log(error);
@@ -178,45 +216,43 @@ class Task {
   }
 
   handleConnection(socket, req) {
-    if(this.wss.clients.size > this.maxSockets)this.maxSockets = this.wss.clients.size;
+    if (this.wss.clients.size > this.maxSockets) this.maxSockets = this.wss.clients.size;
     // [debug]
-    console.log('client ip: ', req.connection.remoteAddress); 
+    console.log('client ip: ', req.connection.remoteAddress);
     //console.log('client token: ', req.headers.token);
     //console.log('app token: ', req.headers.apptoken);
-    console.log('max clients: ', this.maxSockets); 
-    // setOnlineForUser();
+    console.log('max clients: ', this.maxSockets);
 
-    this.sayHellow(socket);
+    this.sayHello(socket);
     this.addListenerToAllSocket();
   }
 
-  sayHellow(socket) {
+  sayHello(socket) {
     if (!global.currentAuction) {
       socket.close();
     } else {
       const data = this.getCurrent();
-      console.log('sayHellow data: ', data);
+      global.debug && console.log('sayHellow data: ', data);
       socket.send(JSON.stringify(data));
     }
     return this;
   }
- 
+
   nextAuction() {
     // [debug]
-    console.log(
-      'last auction carid: ',
-      global.currentAuction && global.currentAuction.car && global.currentAuction.car.plateNum
-    );
+    console.log('last auction carid: ', global.currentAuction && global.currentAuction.car && global.currentAuction.car.plateNum);
 
     global.currentAuction = this.data.auctions.shift();
     if (!global.currentAuction) {
       // [debug]
-      console.log('task ', this.data.id, 'completed!');
-      this.updateState(3); 
+      global.debug && console.log('task ', this.data.id, 'completed!');
+      this.updateState(3);
       this.closeAllSocket();
       //this.wss.removeAllListeners('connection');
       // remove stage from stages
 
+      // notice admin
+      global.ep.emit('sendMsg', '本场次竞价结束！');
     } else {
       // [debug]
       console.log('next auction carid: ', global.currentAuction.car.plateNum);
@@ -224,7 +260,8 @@ class Task {
       global.currentAuction.state = 1; // 1: go
       global.currentAuction.startPrice = global.currentAuction.price;
       global.currentAuction.startTime = new Date().getTime();
-      this.countDown.reset(20 * 60);
+
+      global.ep.emit('sendMsg', global.currentAuction.car.plateNum + ': 竞价开始！');
     }
     this.broadcast();
     return this;
@@ -235,7 +272,7 @@ class Task {
       // SocketServer: { CONNECTING: 0, OPEN: 1, CLOSING: 2, CLOSED: 3 }
       if (client.readyState === 1) {
         client.close();
-        // setOfflineForUser();
+        setOffline().catch((err) => console.log(err));
       }
     });
   }
@@ -252,9 +289,8 @@ class Task {
   }
 
   async addPrice(msg) {
-    console.log('addPrice() msg: ', msg);
+    global.debug && console.log('addPrice() msg: ', msg);
     if (!global.currentAuction) return this;
-
     if (msg.carid !== global.currentAuction.car.plateNum) {
       console.log('addPrice: carid error!');
       return this;
@@ -263,12 +299,13 @@ class Task {
     const user = await getUser(msg.user);
     if (!user) {
       console.log('addPrice: deny!');
-      return this;  
+      return this;
     }
 
-    if (typeof global.currentAuction.price == 'string') global.currentAuction.price = parseInt(global.currentAuction.price);
+    if (typeof global.currentAuction.price == 'string')
+      global.currentAuction.price = parseInt(global.currentAuction.price);
     // to sure user add price for he see
-    if(msg.price == global.currentAuction.price){
+    if (msg.price == global.currentAuction.price) {
       global.currentAuction.price += parseInt(msg.addNum);
       if (global.currentAuction.price >= global.currentAuction.reserve) {
         // start 20s 计时器
@@ -280,21 +317,11 @@ class Task {
     delete user._id;
     msg.user = user;
     this.logger.save('addPrice', msg);
+    // notice admin
+    global.ep.emit('sendMsg', `${global.currentAuction.car.plateNum}：${user.userInfo.nickName}--${user.mobile} 出价 ¥${global.currentAuction.price / 10000}万`);
+
     return this;
-  } 
-}
-
-class Logger {
-  constructor(tag = ['auction'], col = global.db.collection('logs')) {
-    this.tag = tag;
-    this.col = col;
   }
-
-  save(action, data) {
-    return this.col.insertOne({ tag: this.tag, date: new Date(), action, data }).catch((err) => console.log(err));
-  }
-
-  find() {}
 }
 
 //---------------------------------------------------------------
@@ -317,10 +344,6 @@ function getUser(sid) {
   return sid2openid(sid).then((openid) => global.db.collection('users').findOne({ openid }));
 }
 
-function isSold(auc) {
-  return parseInt(auc.price) >= parseInt(auc.reserve);
-}
-
 function updateStageState(id, state) {
   global.debug && console.log('updateStageState: id= ', id, ' state = ', state);
   return global.db
@@ -337,4 +360,19 @@ function sid2openid(sid) {
     .catch((err) => console.log(err));
 }
 
-module.exports = { Task, CountDown, sid2openid };
+function setOnline(sid) {
+  return global.db.collection('sessions').updateOne({ sid }, { $set: { online: true } }, { upsert: false });
+}
+
+function setOffline() {
+  return global.db.collection('sessions').updateMany({}, { $set: { online: false } }, { upsert: false });
+}
+
+function randomString(length = 8) {
+  const chars = '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ';
+  let result = '';
+  for (var i = length; i > 0; --i) result += chars[Math.floor(Math.random() * chars.length)];
+  return result;
+}
+
+module.exports = { Task, CountDown, sid2openid, randomString };

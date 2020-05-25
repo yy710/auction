@@ -108,10 +108,10 @@ Page({
   saveStage() {
     // send data to server
     const data = {
-      startPrice: this.data.startPrice,
-      reservePrice: this.data.reservePrice,
-      stageid: this.data.currentStage.id,
-      platNum: this.data.platNum
+      startPrice: this.startPrice,
+      reservePrice: this.reservePrice,
+      stageid: this.currentStage.id,
+      platNum: this.platNum
     };
     console.log('save-stage/data: ', data);
 
@@ -124,18 +124,14 @@ Page({
         }
       });
     }else{
-      wx.request({
-        url: app.globalData.host + '/save-stage',
-        data,
-        success: res => {
-          console.log('save-stage: ', res.data);
-          uni.showToast({ 
-            title: res.data.msg, 
-            icon: 'success', 
-            duration: 1000,
-            success: () => wx.navigateTo({ url: '../upload/upload' })});
-        }
-      });
+      request('/save-stage', data).then(res => {
+        console.log('save-stage: ', res.data);
+        uni.showModal({ 
+          title: res.data.msg, 
+          showCancel: false,
+          success: () => wx.navigateTo({ url: '../upload/upload' })
+        });
+      }).catch(err => console.log(err));
     }
   },
 

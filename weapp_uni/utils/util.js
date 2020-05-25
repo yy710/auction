@@ -67,7 +67,7 @@ function login(app) {
     request('/check-session').then(r => {
       if (r.data.code) {
         console.log("check-session success!: ", r.data);
-        app.globalData.userInfo = r.data.user;
+        app.globalData.user = r.data.user;
       } else {
         console.log("check-session fail!: ", r.data);
         // refesh sid
@@ -87,10 +87,24 @@ function login(app) {
   }
 }
 
+function auth(page){
+  return request('/get-userphone', {})
+    .then(res => {
+      console.log('get-userphone: ', res.data);
+      const mobile = res.data.content;
+      const adminMobile = new Set(['18669077710', '13908865903', '13888593534']);
+      const isAdmin = mobile && adminMobile.has(mobile);
+      page.setData({ isAdmin });
+      return isAdmin;
+    })
+    .catch(err => console.log('get-userphone err: ', err));
+}
+
 module.exports = {
   login,
   formatTime,
   inQyweixin,
   validMobile,
-  request
+  request,
+  auth
 };

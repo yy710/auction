@@ -48,6 +48,7 @@ Page({
   
   goToDetail: function (e) {
     app.globalData.carid = e.currentTarget.dataset.id;
+    app.globalData.review = false;
     const url = '../detail/detail?carid=' + e.currentTarget.dataset.id ;
     const tagid = e.currentTarget.dataset.tagid;
     //wx.navigateTo({ url });
