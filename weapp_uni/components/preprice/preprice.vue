@@ -72,9 +72,7 @@ export default {
           title: '提示',
           content: '请先报名参加竞价！',
           showCancel: false,
-          success() {
-            //
-          }
+          success() {}
         });
         return 0;
       }
@@ -91,9 +89,7 @@ export default {
             title: '提示',
             content: '价格必须大于起拍价！',
             showCancel: false,
-            success() {
-              //
-            }
+            success() {}
           });
         } else {
           request('/set-prePrice', { prePrice: this.price*10000, carid: this.carid })

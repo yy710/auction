@@ -68,6 +68,7 @@ function login(app) {
       if (r.data.code) {
         console.log("check-session success!: ", r.data);
         app.globalData.user = r.data.user;
+        //delete app.globalData.user._id;
       } else {
         console.log("check-session fail!: ", r.data);
         // refesh sid

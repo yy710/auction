@@ -8,7 +8,7 @@ const url = require('url');
 const express = require('express');
 const app = express();
 const { Task } = require('./common.js');
-const { tasks } = require('./mock');
+//const { tasks } = require('./mock');
 const schedule = require('node-schedule');
 const axios = require('axios');
 //const bodyParser = require('body-parser')
@@ -52,7 +52,7 @@ app.use((req, res, next) => {
   } else {
     req.data.apptoken = 'no found!';
   }
-  console.log('apptoken: ', req.data.apptoken);
+  //console.log('apptoken: ', req.data.apptoken);
   next();
 });
 

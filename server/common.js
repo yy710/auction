@@ -68,8 +68,6 @@ class Task {
     // }
     global.currentAuction = null;
     this.job = this.createJob();
-    //this.initWss();
-    //this.initCountDown();
   }
 
   updateState(state) {
@@ -84,27 +82,27 @@ class Task {
       global.currentAuction && (global.currentAuction.state = 2);
       // save this.currentAuction to db
       const logs = await this.logger.findAction('addPrice', { 'data.carid': global.currentAuction.car.plateNum });
-      const lastBuyerLogData = logs ? logs.pop().data : null;
+      const lastBuyerLogData = Array.isArray(logs) && logs.length > 0 ? logs.pop().data : null;
       let buyer = {};
+      let buyerSid = '';
 
       if (lastBuyerLogData) {
         buyer = isSold(global.currentAuction, lastBuyerLogData);
+        delete buyer._id;
+        buyerSid = (await global.db.collection('sessions').findOne({ openid: buyer.openid })).sid;
       } else {
         // 无人出价
         global.currentAuction.state = 3;
       }
 
-      delete buyer._id;
       global.currentAuction.buyer = buyer;
-      await global.db.collection('auctions')
-        .insertOne({
-          ...global.currentAuction,
-          maxSockets: this.maxSockets,
-          logs,
-          endTime: new Date().getTime()
-        });
-
-      const buyerSid = (await global.db.collection('sessions').findOne({ openid: buyer.openid })).sid;
+      await global.db.collection('auctions').insertOne({
+        ...global.currentAuction,
+        maxSockets: this.maxSockets,
+        logs,
+        endTime: new Date().getTime()
+      });
+      
       this.broadcast({ buyerSid, buyPrice: buyer.price });
       setTimeout(() => this.nextAuction(), 5000);
 
@@ -149,7 +147,7 @@ class Task {
     //  state: this.auc.state,
     //  carid: this.auc.carid
     //}
-    this.wss.clients.forEach((client) => {
+    this.wss.clients.forEach(client => {
       // SocketServer: { CONNECTING: 0, OPEN: 1, CLOSING: 2, CLOSED: 3 }
       if (client.readyState === 1) {
         client.send(JSON.stringify(msg));
@@ -170,27 +168,27 @@ class Task {
 
   getExec(f = null) {
     if (typeof f == 'function') this.exec = f;
-    return (date) => this.exec(date);
+    return date => this.exec(date);
   }
 
   exec(date) {
     // debug
     console.log('job start at ', date);
     //console.log('task.data.auctions: ', this.data.auctions);
-    this.nextAuction();
     this.initWss();
     this.updateState(2); // task start, 2: doing
     this.addListenerToAllSocket();
     this.initCountDown();
     this.countDown.reset(5 * 60);
+    this.nextAuction();
   }
 
   addListenerToAllSocket() {
-    this.wss.clients.forEach((socket) => {
+    this.wss.clients.forEach(socket => {
       if (socket.readyState === 1 && socket.listenerCount('message') === 0) {
         console.log('addListenerToAllSocket!');
         //if (socket.listenerCount('message') > 0) socket.off('message');
-        socket.on('message', (_msg) => {
+        socket.on('message', _msg => {
           try {
             // [debug]
             console.log('Received message: ', _msg);
@@ -200,7 +198,10 @@ class Task {
             if (msg.action === 'addPrice') {
               this.addPrice(msg);
             } else if (msg.action === 'hello') {
-              setOnline(msg.user).then((r) => console.log("matchedCount: %d, modifiedCount: %d", r.matchedCount, r.modifiedCount)).catch((err) => console.log(err));
+              // msg.user is sid
+              setOnline(msg.user)
+                .then(r => console.log('matchedCount: %d, modifiedCount: %d', r.matchedCount, r.modifiedCount))
+                .catch(err => console.log(err));
               this.sayHello(socket);
             }
           } catch (error) {
@@ -232,7 +233,7 @@ class Task {
       socket.close();
     } else {
       const data = this.getCurrent();
-      global.debug && console.log('sayHellow data: ', data);
+      global.debug && console.log('sayHello data: ', data);
       socket.send(JSON.stringify(data));
     }
     return this;
@@ -268,11 +269,11 @@ class Task {
   }
 
   closeAllSocket() {
-    this.wss.clients.forEach((client) => {
+    this.wss.clients.forEach(client => {
       // SocketServer: { CONNECTING: 0, OPEN: 1, CLOSING: 2, CLOSED: 3 }
       if (client.readyState === 1) {
         client.close();
-        setOffline().catch((err) => console.log(err));
+        setOffline().catch(err => console.log(err));
       }
     });
   }
@@ -302,8 +303,7 @@ class Task {
       return this;
     }
 
-    if (typeof global.currentAuction.price == 'string')
-      global.currentAuction.price = parseInt(global.currentAuction.price);
+    if (typeof global.currentAuction.price == 'string') global.currentAuction.price = parseInt(global.currentAuction.price);
     // to sure user add price for he see
     if (msg.price == global.currentAuction.price) {
       global.currentAuction.price += parseInt(msg.addNum);
@@ -318,7 +318,10 @@ class Task {
     msg.user = user;
     this.logger.save('addPrice', msg);
     // notice admin
-    global.ep.emit('sendMsg', `${global.currentAuction.car.plateNum}：${user.userInfo.nickName}--${user.mobile} 出价 ¥${global.currentAuction.price / 10000}万`);
+    global.ep.emit(
+      'sendMsg',
+      `${global.currentAuction.car.plateNum}：${user.userInfo.nickName}--${user.mobile} 出价 ¥${global.currentAuction.price / 10000}万`
+    );
 
     return this;
   }
@@ -341,7 +344,7 @@ function mergeOptions(options, defaults) {
 }
 
 function getUser(sid) {
-  return sid2openid(sid).then((openid) => global.db.collection('users').findOne({ openid }));
+  return sid2openid(sid).then(openid => global.db.collection('users').findOne({ openid }));
 }
 
 function updateStageState(id, state) {
@@ -349,15 +352,15 @@ function updateStageState(id, state) {
   return global.db
     .collection('stages')
     .updateOne({ id }, { $set: { state } }, { upsert: false })
-    .catch((err) => console.log(err));
+    .catch(err => console.log(err));
 }
 
 function sid2openid(sid) {
   return global.db
     .collection('sessions')
     .findOne({ sid })
-    .then((r) => r && r.openid)
-    .catch((err) => console.log(err));
+    .then(r => r && r.openid)
+    .catch(err => console.log(err));
 }
 
 function setOnline(sid) {

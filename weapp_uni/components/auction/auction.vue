@@ -98,7 +98,7 @@ Component({
         } else {
           this.setData({ show: [1, 0], time3 });
           // get data from by websocket
-          this.sayHello();
+          //this.sayHello();
         }
       }
     }
@@ -181,13 +181,13 @@ Component({
     //----------------------------------------------------------------------------
 
     // test changeCar event
-    updateTime() {
-      this.setData({ time: 180000 });
-      this.triggerEvent('changeCar', { carid: '云A961JT' });
-    },
+    // updateTime() {
+    //   this.setData({ time: 180000 });
+    //   this.triggerEvent('changeCar', { carid: '云A961JT' });
+    // },
 
     finished() {
-      wx.showToast({ title: '竞价结束，系统正在进行竞价核算。。。', icon: 'success', duration: 5000 });
+      wx.showToast({ title: '竞价结束', icon: 'success', duration: 5000 });
       this.setData({ disableAdd: true, show: [0, 0] });
     },
 
@@ -225,14 +225,14 @@ function socketConnect(page) {
   const socketTask = uni.connectSocket({
     url: 'wss://www.all2key.cn/yz',
     header: { 'content-type': 'appliction/json', client: 'weapp', token: sid, apptoken: 'yz_auction' },
-    complete() {}
+    complete: () => this.sayHello()
   });
 
   // register event handle for socketTask
   socketTask.onOpen(res => {
     console.log('socket open: ', res);
     // sent auth info to server
-    page.sayHello();
+    //page.sayHello();
   });
 
   socketTask.onMessage(res => {
@@ -289,9 +289,7 @@ function socketConnect(page) {
           title: '恭喜你',
           content: `以¥${page.buyPrice}元拍得此车，随后我们的工作人员会与您联系办理相关提车手续，点击右下角“我的车”可查看具体信息。`,
           showCancel: false,
-          success: () => {
-            //
-          }
+          success: () => {}
         });
       }
     }

@@ -6,5 +6,6 @@ module.exports = {
     singleQuote: true,
     proseWrap: "never", //"<always|never|preserve>"
     trailingComma: "none", //"<none|es5|all>"
-    printWidth: 120 // 80
+    printWidth: 160, // 80,
+    arrowParens: "avoid" //"<avoid | always>"
   };

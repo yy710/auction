@@ -81,7 +81,7 @@ module.exports = function (express) {
       if (!req.data) req.data = {};
       req.data.user = user;
       req.query.user = user;
-      console.log("req.data: ", req.data);
+      //console.log("req.data: ", req.data);
       next();
     } catch (error) {
       console.log(error);
@@ -107,7 +107,7 @@ module.exports = function (express) {
     try {
       // find stage from carid
       const stage = await global.db.collection('stages').findOne({ 'auctions.car.plateNum': carid });
-      const auction = stage.auctions.find((item) => item.car.plateNum == carid);
+      const auction = stage.auctions ? stage.auctions.find(item => item.car.plateNum == carid) : {};
       const { registerDate, carTitle, mileage, carType, images, carDescrible, plateNum } = auction.car;
       
       delete carType._id;
@@ -140,7 +140,7 @@ module.exports = function (express) {
     function getPrePrice(user, carid){
       return (new Logger()).findAction('addPrePrice', { "data.carid": carid, "data.user.openid": user.openid })
         .then(logs => {
-          if(logs){
+          if(Array.isArray(logs) && logs.length > 0){
             return logs.pop().data.prePrice
           }
           return 0;
@@ -206,6 +206,7 @@ module.exports = function (express) {
       const sid = req.query.sid;
       const session = await global.db.collection('sessions').findOne({ sid });
       const user = session ? await global.db.collection('users').findOne({ openid: session.openid }) : null;
+      user && delete user._id;
       res.json({ code: !!session, user });
     } catch (error) {
       console.log('check-session: ', error);
@@ -327,7 +328,7 @@ module.exports = function (express) {
   });
 
   router.get('/save-stage', async function (req, res, next) {
-    console.log('save-stage query: ', req.query);
+    //console.log('save-stage query: ', req.query);
     const { stageid, startPrice, reservePrice, platNum } = req.query;
     const auction = {
       state: 0,
@@ -598,7 +599,7 @@ module.exports = function (express) {
     ]);
 
     const reservePrice = getMaxPrePrice(lastData);
-    console.log({ reservePrice });
+    //console.log({ reservePrice });
     const r = await global.db.collection('stages').updateOne(
       { "auctions.car.plateNum": carid }, 
       { $set: { "auctions.$.reserve": reservePrice.prePrice, "auctions.$.reserveUser": reservePrice.user } }, 
