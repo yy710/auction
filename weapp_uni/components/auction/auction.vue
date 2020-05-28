@@ -225,14 +225,14 @@ function socketConnect(page) {
   const socketTask = uni.connectSocket({
     url: 'wss://www.all2key.cn/yz',
     header: { 'content-type': 'appliction/json', client: 'weapp', token: sid, apptoken: 'yz_auction' },
-    complete: () => this.sayHello()
+    complete: () => {}
   });
 
   // register event handle for socketTask
   socketTask.onOpen(res => {
     console.log('socket open: ', res);
     // sent auth info to server
-    //page.sayHello();
+    page.sayHello();
   });
 
   socketTask.onMessage(res => {

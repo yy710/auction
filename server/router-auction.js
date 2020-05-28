@@ -66,7 +66,7 @@ module.exports = function (express) {
           const url = 'https://www.all2key.cn/yz/auction/images/' + req.file.filename;
           res.json({ msg: 'upload files ok!', url, filename: req.file.filename });
         })
-        .catch((err) => console.log(err));
+        .catch(err => console.log(err));
     }
   );
 
@@ -92,8 +92,8 @@ module.exports = function (express) {
     assert.notEqual(null, req.query.filename);
     const filename = req.query.filename;
     deleteImage(filename)
-      .then((r) => res.json(r))
-      .catch((err) => console.log(err));
+      .then(r => res.json(r))
+      .catch(err => console.log(err));
   });
 
   router.get('/get-stage', async function (req, res, next) {
@@ -109,7 +109,7 @@ module.exports = function (express) {
       const stage = await global.db.collection('stages').findOne({ 'auctions.car.plateNum': carid });
       const auction = stage.auctions ? stage.auctions.find(item => item.car.plateNum == carid) : {};
       const { registerDate, carTitle, mileage, carType, images, carDescrible, plateNum } = auction.car;
-      
+
       delete carType._id;
       delete carType.carlist;
 
@@ -127,7 +127,7 @@ module.exports = function (express) {
           auctionState: auction.state,
           carInfo: { plateNum, registerDate, carTitle, mileage, carDescrible },
           carType,
-          imageURLs: images.map((item) => `https://www.all2key.cn/yz/auction/images/${item.filename}`),
+          imageURLs: images.map(item => `https://www.all2key.cn/yz/auction/images/${item.filename}`),
           prePrice: await getPrePrice(user, carid)
         }
       };
@@ -137,11 +137,12 @@ module.exports = function (express) {
       res.json({ code: 0, msg: 'fail' });
     }
 
-    function getPrePrice(user, carid){
-      return (new Logger()).findAction('addPrePrice', { "data.carid": carid, "data.user.openid": user.openid })
+    function getPrePrice(user, carid) {
+      return new Logger()
+        .findAction('addPrePrice', { 'data.carid': carid, 'data.user.openid': user.openid })
         .then(logs => {
-          if(Array.isArray(logs) && logs.length > 0){
-            return logs.pop().data.prePrice
+          if (Array.isArray(logs) && logs.length > 0) {
+            return logs.pop().data.prePrice;
           }
           return 0;
         })
@@ -220,7 +221,7 @@ module.exports = function (express) {
     const plateNum = data.car.plateNum;
     const userInfo = data.userInfo;
     const carType = data.carType;
-    updateUserInfo(sid, userInfo).catch((err) => console.log(err));
+    updateUserInfo(sid, userInfo).catch(err => console.log(err));
     // operator save to logs
 
     delete data.userInfo;
@@ -242,11 +243,11 @@ module.exports = function (express) {
     col
       .find({ state: { $in: [0, 1] } })
       .toArray()
-      .then((stages) => {
+      .then(stages => {
         //console.log("get-stages: ", stages);
         res.json({ msg: 'ok', stages });
       })
-      .catch((err) => console.log(err));
+      .catch(err => console.log(err));
   });
 
   router.get('/get-mycar', async function (req, res, next) {
@@ -257,7 +258,7 @@ module.exports = function (express) {
     //console.log('get-mycar openid: ', openid);
     const mycars = await global.db.collection('auctions').find({ 'buyer.openid': openid }).toArray();
     //console.log('mycars: ', mycars);
-    const cars = mycars.map((item) => {
+    const cars = mycars.map(item => {
       return {
         plateNum: item.car.plateNum,
         price: item.buyer.price,
@@ -274,10 +275,10 @@ module.exports = function (express) {
     global.db
       .collection('auctions')
       .findOne({ 'car.plateNum': carid })
-      .then((auction) => {
+      .then(auction => {
         const content = auction.logs
-          .filter((log) => log.action === 'addPrice')
-          .map((log) => {
+          .filter(log => log.action === 'addPrice')
+          .map(log => {
             const { price, addNum } = log.data;
             return {
               text: new Date(log.date).toLocaleString(),
@@ -286,15 +287,17 @@ module.exports = function (express) {
           });
         res.json({ msg: 'ok', reserve: auction.reserve, content });
       })
-      .catch((err) => console.log(err));
+      .catch(err => console.log(err));
   });
 
   router.get('/get-auctions', function (req, res, next) {
     const col = global.db.collection('auctions');
-    col.find({}).toArray()
-      .then((auctions) => {
+    col
+      .find({})
+      .toArray()
+      .then(auctions => {
         //console.log("get-stages: ", stages);
-        const content = auctions.map((auction) => {
+        const content = auctions.map(auction => {
           return {
             title: auction.car.carTitle,
             plateNum: auction.car.plateNum,
@@ -311,7 +314,7 @@ module.exports = function (express) {
         });
         res.json({ msg: 'ok', content });
       })
-      .catch((err) => console.log(err));
+      .catch(err => console.log(err));
   });
 
   router.get('/update-stage-start-time', function (req, res, next) {
@@ -324,7 +327,7 @@ module.exports = function (express) {
         global.obj_tasks.exec('update-stage-start-time');
         res.json({ errcode: 0, msg: 'ok' });
       })
-      .catch((err) => console.log(err));
+      .catch(err => console.log(err));
   });
 
   router.get('/save-stage', async function (req, res, next) {
@@ -343,7 +346,11 @@ module.exports = function (express) {
     //await global.db.collection('cars').deleteOne({ plateNum: platNum });
     await global.db.collection('cars').updateOne({ plateNum: platNum }, { $set: { stageid } }, { upsert: false });
     const logger = new Logger();
-    logger.save('addPrePrice',  { prePrice: parseInt(reservePrice), carid: platNum, user: { openid: 'yz_auction', mobile: '00000000000', userInfo: { nickName: 'yz_auction' } } });
+    logger.save('addPrePrice', {
+      prePrice: parseInt(reservePrice),
+      carid: platNum,
+      user: { openid: 'yz_auction', mobile: '00000000000', userInfo: { nickName: 'yz_auction' } }
+    });
     global.obj_tasks.exec('save-stage');
     res.json({ errcode: 0, msg: '竞价信息已保存！' });
   });
@@ -357,10 +364,10 @@ module.exports = function (express) {
     const col = global.db.collection('stages');
     col
       .replaceOne({ id: newStage.id }, newStage, { upsert: true })
-      .then((r) => {
+      .then(r => {
         res.json({ msg: 'ok' });
       })
-      .catch((err) => console.log(err));
+      .catch(err => console.log(err));
   });
 
   router.get('/get-cars', async function (req, res, next) {
@@ -371,9 +378,9 @@ module.exports = function (express) {
       .find({ state: { $in: [0, 1, 2] } })
       .toArray();
     stages.length > 0 &&
-      stages.forEach((stage) => {
+      stages.forEach(stage => {
         if (stage.auctions.length > 0)
-          stage.auctions.forEach((auction) => {
+          stage.auctions.forEach(auction => {
             const content = {
               id: auction.car.plateNum,
               tag: { id: 0, type: 'warning', color: 'green', msg: '等待竞价开始' },
@@ -387,13 +394,9 @@ module.exports = function (express) {
             };
 
             // update tag of car from auctions collection and currentAuction
-            if (auctions.find((item) => item.car.plateNum === content.id)) {
+            if (auctions.find(item => item.car.plateNum === content.id)) {
               content.tag = { id: 2, type: 'primary', color: 'grey', msg: '竞价已结束' };
-            } else if (
-              global.currentAuction &&
-              global.currentAuction.car &&
-              global.currentAuction.car.plateNum === content.id
-            ) {
+            } else if (global.currentAuction && global.currentAuction.car && global.currentAuction.car.plateNum === content.id) {
               content.tag = { id: 1, type: 'danger', color: 'red', msg: '正在竞价中' };
             }
 
@@ -454,9 +457,9 @@ module.exports = function (express) {
   router.get('/enroll', function (req, res, next) {
     const { sid, nickName, mobile } = req.query;
     sid2openid(sid)
-      .then((openid) => global.db.collection('users').updateOne({ openid }, { $set: { mobile, 'userInfo.nickName': nickName } }, { upsert: true }))
+      .then(openid => global.db.collection('users').updateOne({ openid }, { $set: { mobile, 'userInfo.nickName': nickName } }, { upsert: true }))
       .then(() => res.json({ code: 1, msg: 'success' }))
-      .catch((err) => console.log(err));
+      .catch(err => console.log(err));
   });
 
   router.get('/get-userphone', async function (req, res, next) {
@@ -480,14 +483,14 @@ module.exports = function (express) {
      * | downloadUrl	 | y	    | String	| 版本下载链接  |
      */
     let content = null;
-    if (version == '001' || version == '002') {
+    if (version != '004') {
       content = {
         success: true,
-        versionCode: 3,
-        versionName: '0.0.3',
+        versionCode: 4,
+        versionName: '0.0.4',
         versionInfo: '公测版',
         forceUpdate: true,
-        downloadUrl: 'https://www.all2key.cn/yzauction-qrcode/yzauction_003.wgt'
+        downloadUrl: 'https://www.all2key.cn/yzauction-qrcode/yzauction_004.wgt'
       };
     }
     console.log('res.json({ content: %s })', content);
@@ -498,28 +501,34 @@ module.exports = function (express) {
   router.get('/modify-stages', function (req, res, next) {
     const col = global.db.collection('stages');
     const { start_time } = req.query;
-    col.updateOne({ state: 1 }, { $set: { start_time } }, { upsert: false }).then(r => {
-      global.obj_tasks.exec("manual modify stages start_time!");
-      res.json(r);
-    }).catch(err => console.log(err));
+    col
+      .updateOne({ state: 1 }, { $set: { start_time } }, { upsert: false })
+      .then(r => {
+        global.obj_tasks.exec('manual modify stages start_time!');
+        res.json(r);
+      })
+      .catch(err => console.log(err));
 
     function removeCar(car = '云A00005') {
       let count = 0;
-      col.find().toArray()
-        .then((stages) => {
-          stages.forEach((stage) => {
+      col
+        .find()
+        .toArray()
+        .then(stages => {
+          stages.forEach(stage => {
             const newAucs = [];
-            stage.auctions.forEach((auc) => {
+            stage.auctions.forEach(auc => {
               if (auc.car.plateNum !== car) {
                 newAucs.push(auc);
               }
             });
-            col.updateOne({ id: stage.id }, { $set: { auctions: newAucs } }, { upsert: false })
+            col
+              .updateOne({ id: stage.id }, { $set: { auctions: newAucs } }, { upsert: false })
               .then(() => count++)
-              .catch((err) => console.log(err));
+              .catch(err => console.log(err));
           });
         })
-        .catch((err) => console.log(err));
+        .catch(err => console.log(err));
       res.json({ count });
     }
   });
@@ -533,7 +542,7 @@ module.exports = function (express) {
     try {
       const { plateNum } = req.query;
       const images = await global.db.collection('images').find({ car_plat_num: plateNum }).toArray();
-      images.length != 0 && images.forEach((image) => deleteImage(image.filename));
+      images.length != 0 && images.forEach(image => deleteImage(image.filename));
       const r = await global.db.collection('cars').deleteOne({ plateNum });
       assert.equal(1, r.deletedCount);
       res.json({ errcode: 0, msg: `car: ${plateNum} deleted!` });
@@ -547,27 +556,27 @@ module.exports = function (express) {
     global.db
       .collection('stages')
       .updateOne({ id: stageid }, { $pull: { auctions: { 'car.plateNum': plateNum } } }, { upsert: false })
-      .then((r) => {
+      .then(r => {
         //console.log(r);
         assert.equal(1, r.matchedCount);
         assert.equal(1, r.modifiedCount);
         res.json({ errcode: 0, msg: `car: ${plateNum} unlinked!` });
       })
-      .then((r) => global.db.collection('cars').updateOne({ plateNum }, { $set: { stageid: '' } }, { upsert: false }))
-      .catch((err) => console.log(err));
+      .then(r => global.db.collection('cars').updateOne({ plateNum }, { $set: { stageid: '' } }, { upsert: false }))
+      .catch(err => console.log(err));
   });
 
   router.get('/get-online-users', async function (req, res, next) {
     try {
       const sessions = await global.db.collection('sessions').find({ online: true }).toArray();
-      const openids = sessions.map((s) => s.openid);
+      const openids = sessions.map(s => s.openid);
       const onlineUsers = await global.db
         .collection('users')
         .find({ openid: { $in: openids } })
         .toArray();
-      const content = sessions.map((s) => {
+      const content = sessions.map(s => {
         let r = { sid: s.sid, time: s.time, nickName: '未注册', mobile: '无' };
-        onlineUsers.forEach((u) => {
+        onlineUsers.forEach(u => {
           if (u.openid == s.openid) {
             r = { sid: s.sid, time: s.time, nickName: u.userInfo.nickName, mobile: u.mobile };
           }
@@ -582,47 +591,63 @@ module.exports = function (express) {
   });
 
   router.get('/set-prePrice', async function (req, res, next) {
-    const { prePrice, carid, user } = req.query;
-    if(!prePrice || !carid || !user){
+    let { prePrice, carid, user } = req.query;
+    if (!prePrice || !carid || !user) {
       res.json({ errcode: 0, msg: '预出价失败！', content: { user } });
       return 0;
     }
 
     const logger = new Logger();
     delete user._id;
-
+    prePrice = parseInt(prePrice);
     await logger.save('addPrePrice', { prePrice, carid, user });
     const lastData = await logger.aggregate([
-      { $match: { "action" : "addPrePrice", "data.carid": carid } },
-      { $sort: { "data.user.openid": 1, "date": 1 } },
-      { $group: { _id: "$data.user.openid", lastData: { $last: "$data" } } }
+      { $match: { action: 'addPrePrice', 'data.carid': carid } },
+      //{ $sort: { 'data.user.openid': 1, date: 1 } },
+      { $sort: { date: 1 } },
+      { $group: { _id: '$data.user.openid', lastData: { $last: '$data' } } },
+      { $project: { prePrice: '$lastData.prePrice', user: '$lastData.user' } },
+      { $sort: { prePrice: 1 } }
     ]);
 
+    console.log({ lastData });
     const reservePrice = getMaxPrePrice(lastData);
-    //console.log({ reservePrice });
-    const r = await global.db.collection('stages').updateOne(
-      { "auctions.car.plateNum": carid }, 
-      { $set: { "auctions.$.reserve": reservePrice.prePrice, "auctions.$.reserveUser": reservePrice.user } }, 
-      { upsert: false }
-    );
+    console.log({ reservePrice });
+    const r = await global.db
+      .collection('stages')
+      .updateOne(
+        { 'auctions.car.plateNum': carid, 'auctions.reserve': { $lt: reservePrice.prePrice } },
+        { $set: { 'auctions.$.reserve': reservePrice.prePrice, 'auctions.$.reserveUser': reservePrice.user } },
+        { upsert: false }
+      );
 
-    if (r.matchedCount) {
-      r.modifiedCount && global.obj_tasks.exec('set-prePrince');
-      res.json({ errcode: 0, msg: '预出价成功！', content: { user } });
-    } else {
-      res.json({ errcode: 0, msg: '预出价失败！', content: { user } });
-    }
+    //r.matchedCount
+    r.modifiedCount && global.obj_tasks.exec('set-prePrince');
+    res.json({ errcode: 0, msg: '预出价成功！', content: { user } });
 
-    function getMaxPrePrice(arr){
-      let maxPrePrice = 0;
-      let index = 0;
-      arr.forEach((item, i) => {
-        if(item.lastData.prePrice > maxPrePrice) {
-          maxPrePrice = item.lastData.prePrice;
-          index = i;
+    function getMaxPrePrice(logs) {
+      if (Array.isArray(logs) && logs.length > 0) {
+        const log = logs.pop();
+        if (isYz(log)) {
+          return logs.pop();
         }
-      });
-      return arr[index].lastData;
+        return log;
+        // let maxPreLog = logs.shift();
+        // logs.forEach(log => {
+        //   const max = parseInt(maxPreLog.lastData.prePrice);
+        //   const price = parseInt(log.lastData.prePrice);
+        //   if (price > max || (price === max && isYz(maxPreLog))) {
+        //     maxPreLog = log;
+        //   }
+        // });
+        // return maxPreLog.lastData;
+      } else {
+        return {};
+      }
+
+      function isYz(log) {
+        return log.user.openid === 'yz_auction';
+      }
     }
 
     // const r = await global.db.collection('stages').updateOne(
@@ -642,19 +667,19 @@ module.exports = function (express) {
 
 function deleteImage(filename) {
   return new Promise(function (resolve, reject) {
-    fs.unlink(global.uploadPath + filename, (err) => {
+    fs.unlink(global.uploadPath + filename, err => {
       if (err) reject(err);
       console.log(filename, ' was deleted');
       // remove frome db
       global.db
         .collection('images')
         .deleteOne({ filename })
-        .then((r) => {
+        .then(r => {
           assert.equal(1, r.deletedCount);
           console.log('document was clear');
           resolve({ errcode: 0, msg: 'file deleted!' });
         })
-        .catch((err) => reject(err));
+        .catch(err => reject(err));
     });
   });
 }
@@ -684,15 +709,15 @@ function wait500(s = 500) {
 }
 
 function updateUserInfo(sid, userInfo) {
-  return sid2openid(sid).then((openid) => {
+  return sid2openid(sid).then(openid => {
     return global.db.collection('users').updateOne({ openid }, { $set: { userInfo } }, { upsert: true });
   });
 }
 
 function updateUserPhone(sid, phone) {
-  return sid2openid(sid).then((openid) => {
+  return sid2openid(sid).then(openid => {
     return global.db.collection('users').updateOne({ openid }, { $set: { phone } }, { upsert: true });
   });
 }
 
-function updateUser(sid, obj = {}) { }
+function updateUser(sid, obj = {}) {}

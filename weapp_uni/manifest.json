@@ -2,8 +2,8 @@
     "name" : "谊众二手车",
     "appid" : "__UNI__D3CAF10",
     "description" : "谊众二手车竞价平台",
-    "versionName" : "0.0.3",
-    "versionCode" : 3,
+    "versionName" : "0.0.4",
+    "versionCode" : 4,
     "transformPx" : false,
     "app-plus" : {
         "usingComponents" : true,

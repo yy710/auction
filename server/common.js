@@ -83,18 +83,10 @@ class Task {
       // save this.currentAuction to db
       const logs = await this.logger.findAction('addPrice', { 'data.carid': global.currentAuction.car.plateNum });
       const lastBuyerLogData = Array.isArray(logs) && logs.length > 0 ? logs.pop().data : null;
-      let buyer = {};
-      let buyerSid = '';
 
-      if (lastBuyerLogData) {
-        buyer = isSold(global.currentAuction, lastBuyerLogData);
-        delete buyer._id;
-        buyerSid = (await global.db.collection('sessions').findOne({ openid: buyer.openid })).sid;
-      } else {
-        // 无人出价
-        global.currentAuction.state = 3;
-      }
-
+      const buyer = isSold(global.currentAuction, lastBuyerLogData);
+      const buyerSid = buyer ? (await global.db.collection('sessions').findOne({ openid: buyer.openid })).sid: '';
+      buyer && delete buyer._id;
       global.currentAuction.buyer = buyer;
       await global.db.collection('auctions').insertOne({
         ...global.currentAuction,
@@ -107,12 +99,23 @@ class Task {
       setTimeout(() => this.nextAuction(), 5000);
 
       function isSold(auc, logData) {
+        const hasPrePrice = auc.reserveUser && auc.reserveUser.openid != 'yz_auction';
         const price = parseInt(auc.price);
+        const reserve = parseInt(auc.reserve);
+        
+        if(!logData){
+           // 无人出价
+          if(hasPrePrice){
+            auc.state = 2;
+            return { ...auc.reserveUser, price: reserve };
+          }
+          auc.state = 3;
+          return {};
+        }
+
         const _price = parseInt(logData.price) + parseInt(logData.addNum);
         assert.equal(_price, price);
         const user = logData.user;
-        const reserve = parseInt(auc.reserve);
-        const hasPrePrice = auc.reserveUser && auc.reserveUser.openid != 'yz_auction';
 
         if (price > reserve) {
           auc.state = 2;
