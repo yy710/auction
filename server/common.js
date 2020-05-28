@@ -88,14 +88,14 @@ class Task {
       const buyerSid = buyer ? (await global.db.collection('sessions').findOne({ openid: buyer.openid })).sid: '';
       buyer && delete buyer._id;
       global.currentAuction.buyer = buyer;
-      await global.db.collection('auctions').insertOne({
+      const r = await global.db.collection('auctions').insertOne({
         ...global.currentAuction,
         maxSockets: this.maxSockets,
         logs,
         endTime: new Date().getTime()
       });
       
-      this.broadcast({ buyerSid, buyPrice: buyer.price });
+      this.broadcast({ buyerSid, buyPrice: buyer && buyer.price });
       setTimeout(() => this.nextAuction(), 5000);
 
       function isSold(auc, logData) {
@@ -110,7 +110,7 @@ class Task {
             return { ...auc.reserveUser, price: reserve };
           }
           auc.state = 3;
-          return {};
+          return null;
         }
 
         const _price = parseInt(logData.price) + parseInt(logData.addNum);
@@ -133,7 +133,7 @@ class Task {
           return { ...auc.reserveUser, price: reserve };
         } else {
           auc.state = 3;
-          return {};
+          return null;
         }
       }
     });
@@ -233,7 +233,7 @@ class Task {
 
   sayHello(socket) {
     if (!global.currentAuction) {
-      socket.close();
+      //socket.close();
     } else {
       const data = this.getCurrent();
       global.debug && console.log('sayHello data: ', data);

@@ -333,11 +333,13 @@ module.exports = function (express) {
   router.get('/save-stage', async function (req, res, next) {
     //console.log('save-stage query: ', req.query);
     const { stageid, startPrice, reservePrice, platNum } = req.query;
+    const yz = { openid: 'yz_auction', mobile: '00000000000', userInfo: { nickName: 'yz_auction' } };
     const auction = {
       state: 0,
       price: parseInt(startPrice),
       reserve: parseInt(reservePrice),
-      car: await global.db.collection('cars').findOne({ plateNum: platNum })
+      car: await global.db.collection('cars').findOne({ plateNum: platNum }),
+      reserveUser: yz
     };
     //console.log('save-stage/auction: ', auction);
     const r = await global.db.collection('stages').updateOne({ id: stageid }, { $push: { auctions: auction } });
@@ -349,7 +351,7 @@ module.exports = function (express) {
     logger.save('addPrePrice', {
       prePrice: parseInt(reservePrice),
       carid: platNum,
-      user: { openid: 'yz_auction', mobile: '00000000000', userInfo: { nickName: 'yz_auction' } }
+      user: yz
     });
     global.obj_tasks.exec('save-stage');
     res.json({ errcode: 0, msg: '竞价信息已保存！' });
@@ -613,7 +615,8 @@ module.exports = function (express) {
     console.log({ lastData });
     const reservePrice = getMaxPrePrice(lastData);
     console.log({ reservePrice });
-    const r = await global.db
+    
+    let r = await global.db
       .collection('stages')
       .updateOne(
         { 'auctions.car.plateNum': carid, 'auctions.reserve': { $lt: reservePrice.prePrice } },
@@ -621,7 +624,16 @@ module.exports = function (express) {
         { upsert: false }
       );
 
-    //r.matchedCount
+    if (!r.matchedCount) {
+      r = await global.db
+        .collection('stages')
+        .updateOne(
+          { 'auctions.car.plateNum': carid, 'auctions.reserve': reservePrice.prePrice, 'auctions.reserveUser.openid': 'yz_auction' },
+          { $set: { 'auctions.$.reserveUser': reservePrice.user } },
+          { upsert: false }
+        );
+    }
+
     r.modifiedCount && global.obj_tasks.exec('set-prePrince');
     res.json({ errcode: 0, msg: '预出价成功！', content: { user } });
 
