@@ -5,7 +5,7 @@
       <!-- 手风琴效果 -->
       <uni-collapse accordion="true">
         <uni-collapse-item :title="stage.dateString" thumb="/static/alarm.svg"  v-for="stage in stages" :key="stage.id">
-          <van-card v-for="(auc, index) in stage.auctions" :key="index" :price="auc.reserve + '（保留价）'" :desc="auc.car.plateNum" :title="auc.car.carTitle" :thumb="'https://www.all2key.cn/yz/auction/images/' + auc.car.images[0].filename">
+          <van-card v-for="(auc, index) in stage.auctions" :key="index" :price="auc.reserve + '（保留价或最高预出价）'" :desc="auc.car.plateNum" :title="auc.car.carTitle" :thumb="'https://www.all2key.cn/yz/auction/images/' + auc.car.images[0].filename">
             <view slot="footer">
               <van-button size="mini" @click="unlinkCar" :data-platenum="auc.car.plateNum" :data-stageid="stage.id">下架</van-button>
             </view>
