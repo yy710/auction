@@ -305,7 +305,7 @@ module.exports = function (express) {
             startTime: auction.startTime,
             endTime: auction.endTime,
             startPrice: auction.startPrice,
-            endPrice: auction.buyer.price,
+            endPrice: auction.buyer ? auction.buyer.price : 0,
             reservePrice: auction.reserve,
             //logs: auction.logs,
             tag: auction.state === 2 ? '已成交' : '流拍',

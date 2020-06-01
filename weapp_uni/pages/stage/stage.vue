@@ -20,7 +20,7 @@
              </van-row>
              <van-row>
                <van-col span="6">成交价：</van-col>
-               <van-col span="18">¥{{ item.buyer.price/10000 }}万</van-col>
+               <van-col span="18">¥{{ item.buyer.price ? item.buyer.price/10000 : 0 }}万</van-col>
              </van-row>
            </view>
          </van-card>
