@@ -7,14 +7,14 @@ module.exports = {
         return function (req, res, next) {
             if (global.token) {
                 req.data.saveToken = false;
-                global.debug && console.log("find token in global:", global.token);
+                global.config.debug && console.log("find token in global:", global.token);
                 next();
             }
             else global.db.collection('tokens')
                 .find({ agentid })
                 .next()
                 .then(doc => {
-                    global.debug && console.log("find token in db: ", doc);
+                    global.config.debug && console.log("find token in db: ", doc);
                     global.token = doc;
                     next();
                 })
@@ -41,7 +41,7 @@ module.exports = {
             else {
                 axios.get(`https://qyapi.weixin.qq.com/cgi-bin/gettoken?corpid=${corpid}&corpsecret=${secret}`)
                     .then(result => {
-                        global.debug && console.log("axios.get(): ", result.data);
+                        global.config.debug && console.log("axios.get(): ", result.data);
                         assert.equal(0, result.data.errcode);
                         let token = result.data;
                         token.agentid = agentid;

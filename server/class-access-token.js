@@ -15,9 +15,9 @@ class AccessToken {
   async findToken() {
     if (!this.token) {
       this.token = await this.col.findOne({ agentid: this.config.agentid });
-      global.debug && this.token && console.log('find token in db: ', this.token);
+      global.config.debug && this.token && console.log('find token in db: ', this.token);
     } else {
-      global.debug && console.log('find token:', this.token);
+      global.config.debug && console.log('find token:', this.token);
     }
     return this;
   }
@@ -39,7 +39,7 @@ class AccessToken {
       `https://qyapi.weixin.qq.com/cgi-bin/gettoken?corpid=${this.config.corpid}&corpsecret=${this.config.secret}`
     );
     const token = result.data;
-    global.debug && console.log('axios.get().data: ', token);
+    global.config.debug && console.log('axios.get().data: ', token);
     token.agentid = this.config.agentid;
     token.time = new Date().getTime();
     this.token = token;

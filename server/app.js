@@ -1,34 +1,30 @@
 const assert = require('assert');
 const { inspect } = require('util');
-//const xml2js = require('xml2js');//use to wechat module
+// const http = require('http');
 const https = require('https');
 const WebSocket = require('ws');
 const url = require('url');
-//const fs = require('fs');
 const express = require('express');
 const app = express();
 const { Task } = require('./common.js');
-//const { tasks } = require('./mock');
-const schedule = require('node-schedule');
+// const schedule = require('node-schedule');
 const axios = require('axios');
-//const bodyParser = require('body-parser')
-//const http = require('http');
-//const xmlparser = require('express-xml-bodyparser');
+
+// handle post
+// const bodyParser = require('body-parser')
+// const xmlparser = require('express-xml-bodyparser');
+
 const MongoClient = require('mongodb').MongoClient;
 // 载入配置文件
 global.config = require('./config.js');
-const { httpsOptions, dbUrl, debug, uploadPath, workWeixin } = global.config;
-global.uploadPath = uploadPath;
-global.debug = debug;
-
 const routerAuction = require('./router-auction.js');
 const routerLottery = require('./router-lottery.js');
 const routerHoliday51 = require('./router-holiday51.js');
-const setWss3 = require('./ws-lottery');
+const routerHoliday613 = require('./router-holiday613.js');
+const setWss3 = require('./ws-lottery.js');
 
 const EventProxy = require('./eventproxy.js');
 global.ep = new EventProxy();
-//const session = require('./session.js').session;
 
 const cors = require('cors');
 app.use(cors());
@@ -52,7 +48,7 @@ app.use((req, res, next) => {
   } else {
     req.data.apptoken = 'no found!';
   }
-  //console.log('apptoken: ', req.data.apptoken);
+  // console.log('apptoken: ', req.data.apptoken);
   next();
 });
 
@@ -60,7 +56,7 @@ app.use((req, res, next) => {
   // init mogodb connection
   if (!global.db) {
     // static method
-    const client = await MongoClient.connect(dbUrl, { useUnifiedTopology: true });
+    const client = await MongoClient.connect(global.config.dbUrl, { useUnifiedTopology: true });
     console.log('Connected successfully to mongodb server');
     global.db = client.db('auction');
   }
@@ -68,7 +64,8 @@ app.use((req, res, next) => {
   app.use('/yz/auction', routerAuction(express));
   app.use('/yz/lottery', routerLottery(express));
   app.use('/yz/holiday51', routerHoliday51(express));
-  app.use('/yz/auction/images', express.static(global.uploadPath));
+  app.use('/yz/holiday613', routerHoliday613(express));
+  app.use('/yz/auction/images', express.static(global.config.uploadPath));
   app.use('/mymind', express.static('../my-mind'));
   app.use('/mindmaps', express.static('../mindmaps/dist'));
   app.use('/drawio', express.static('../drawio/src/main/webapp'));
@@ -77,8 +74,8 @@ app.use((req, res, next) => {
   app.use('/yzauction-qrcode', express.static('./qrcode'));
 
   //----------------------------------------------------------------
-  const server = https.createServer(httpsOptions, app);
-  //const wss = new SocketServer.Server({ server });
+  const server = https.createServer(global.config.httpsOptions, app);
+  // const wss = new SocketServer.Server({ server });
   const wss1 = new WebSocket.Server({ noServer: true });
   const wss2 = new WebSocket.Server({ noServer: true });
   const wss3 = new WebSocket.Server({ noServer: true });
@@ -135,13 +132,13 @@ app.use((req, res, next) => {
     tasksData: [],
     // entrance
     exec: async function load(info) {
-      global.debug && console.log('mainJob started at ', info);
+      global.config.debug && console.log('mainJob started at ', info);
       try {
         // get tasks data from mongodb in one houre
         this.tasksData = await this.findTasks();
-        //global.debug && console.log('before tasks[0].data: ', this.tasksData[0]);
+        //global.config.debug && console.log('before tasks[0].data: ', this.tasksData[0]);
         this.createTasks();
-        global.debug && console.log('tasks[0].data: ', this.tasks[0] && this.tasks[0].data);
+        global.config.debug && console.log('tasks[0].data: ', this.tasks[0] && this.tasks[0].data);
         return this;
       } catch (error) {
         console.log(error);

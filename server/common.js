@@ -77,7 +77,7 @@ class Task {
 
   initCountDown() {
     this.countDown.on('timeout', async time => {
-      global.debug && console.log('timeout: ', time);
+      global.config.debug && console.log('timeout: ', time);
       // set auction end flag
       global.currentAuction && (global.currentAuction.state = 2);
       // save this.currentAuction to db
@@ -236,7 +236,7 @@ class Task {
       //socket.close();
     } else {
       const data = this.getCurrent();
-      global.debug && console.log('sayHello data: ', data);
+      global.config.debug && console.log('sayHello data: ', data);
       socket.send(JSON.stringify(data));
     }
     return this;
@@ -249,7 +249,7 @@ class Task {
     global.currentAuction = this.data.auctions.shift();
     if (!global.currentAuction) {
       // [debug]
-      global.debug && console.log('task ', this.data.id, 'completed!');
+      global.config.debug && console.log('task ', this.data.id, 'completed!');
       this.updateState(3);
       this.closeAllSocket();
       //this.wss.removeAllListeners('connection');
@@ -293,7 +293,7 @@ class Task {
   }
 
   async addPrice(msg) {
-    global.debug && console.log('addPrice() msg: ', msg);
+    global.config.debug && console.log('addPrice() msg: ', msg);
     if (!global.currentAuction) return this;
     if (msg.carid !== global.currentAuction.car.plateNum) {
       console.log('addPrice: carid error!');
@@ -351,7 +351,7 @@ function getUser(sid) {
 }
 
 function updateStageState(id, state) {
-  global.debug && console.log('updateStageState: id= ', id, ' state = ', state);
+  global.config.debug && console.log('updateStageState: id= ', id, ' state = ', state);
   return global.db
     .collection('stages')
     .updateOne({ id }, { $set: { state } }, { upsert: false })

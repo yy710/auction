@@ -12,7 +12,7 @@ const Logger = require('./class-logger.js');
 
 const storage = multer.diskStorage({
   destination: function (req, file, cb) {
-    cb(null, global.uploadPath);
+    cb(null, global.config.uploadPath);
   },
   filename: function (req, file, cb) {
     const suffix = file.originalname.split('.').pop();
@@ -98,7 +98,7 @@ module.exports = function (express) {
 
   router.get('/get-stage', async function (req, res, next) {
     const carid = req.query.carid || (global.currentAuction && global.currentAuction.car.plateNum) || null;
-    global.debug && console.log('get-stage/carid: ', carid);
+    global.config.debug && console.log('get-stage/carid: ', carid);
 
     if (!carid) {
       return res.json({ code: 0, msg: '当前没有正在竞价车辆！', content: '' });
@@ -217,7 +217,7 @@ module.exports = function (express) {
   router.get('/save-car', async function (req, res, next) {
     const sid = req.query.sid;
     const data = JSON.parse(req.query.data);
-    global.debug && console.log('save-car: ', data);
+    global.config.debug && console.log('save-car: ', data);
     const plateNum = data.car.plateNum;
     const userInfo = data.userInfo;
     const carType = data.carType;
